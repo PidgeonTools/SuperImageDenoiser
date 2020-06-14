@@ -13,10 +13,33 @@ bl_info = {
 
 # Imports
 import bpy
+from bpy.types import (
+    Operator,
+    Panel,
+    PropertyGroup,
+)
+from bpy.props import (
+    EnumProperty,
+    PointerProperty,
+)
+
 
 # Classes
 
-class SID_Create(bpy.types.Operator):
+class SID_Settings(PropertyGroup):
+    quality: EnumProperty(
+        name="Quality",
+        items=(
+            ('LOW', 'Low', "Low final quality (fast compositing time, uses least memory)"),
+            ('MEDIUM', 'Medium', "Medium final quality (moderate compositing time, uses a little more memory)"),
+            ('HIGH', 'High', "High final quality (slower compositing time, uses significantly more memory)"),
+        ),
+        default='HIGH',
+        description="Choose the quality of the final denoised image. Affects memory used for compositing."
+    )
+
+
+class SID_Create(Operator):
 
     
     bl_idname = "object.superimagedenoise"
@@ -24,10 +47,13 @@ class SID_Create(bpy.types.Operator):
     bl_description = "Enables all the necessary passes, Creates all the nodes you need, connects them all for you, to save the time you don't need to waste"
 
     def execute(self, context):
-        
 
         scene = context.scene
-            
+        settings = scene.sid_settings
+
+        Quality = settings.quality
+        print(f'Selected quality: {Quality}')
+
         # Initialise important settings
         scene.use_nodes = True
         RenderLayer = 0
@@ -367,7 +393,7 @@ class SID_Create(bpy.types.Operator):
         
         return {'FINISHED'}
 
-class SID_PT_Panel(bpy.types.Panel):
+class SID_PT_Panel(Panel):
 
     bl_label = "Create Super Denoiser"
     bl_space_type = 'PROPERTIES'
@@ -378,23 +404,30 @@ class SID_PT_Panel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
+        settings = scene.sid_settings
 
-        
+
         Headline = layout.row()
         Headline.label(text="Click to activate SID", icon='SHADERFX')
-        
+
         if bpy.context.scene.use_nodes == True:
             Warn = layout.row()
             Warn.label(text="Compositor nodes activated!", icon='ERROR')
             Inform = layout.row()
             Inform.label(text="       Don't worry if you just added SID!", icon='NONE')
+        layout.separator()
+
+        Quality = layout.row()
+        Quality.prop(settings, "quality")
+        layout.separator()
 
         Button = layout.row()
         Button.operator("object.superimagedenoise")
 
-    
+
 # Register classes
 classes = (
+    SID_Settings,
     SID_PT_Panel,
     SID_Create,
 )
@@ -404,10 +437,14 @@ def register():
     for cls in classes:
         register_class(cls)
 
-    
+    bpy.types.Scene.sid_settings = PointerProperty(type=SID_Settings)
+
 
 def unregister():
     from bpy.utils import unregister_class
+
+    del bpy.types.Scene.sid_settings
+
     for cls in reversed(classes):
         unregister_class(cls)
 
