@@ -1,8 +1,7 @@
-
 bl_info = {
     "name": "Super Image Denoiser (SID)",
     "author": "Kevin Lorengel",
-    "version": (2, 1),
+    "version": (2, 2),
     "blender": (2, 83, 0),
     "location": "Properties > Render > Create Super Denoiser",
     "description": "SID denoises your Cycles renders near perfectly, with only one click!",
@@ -19,6 +18,7 @@ from bpy.types import (
     PropertyGroup,
 )
 from bpy.props import (
+    BoolProperty,
     EnumProperty,
     PointerProperty,
 )
@@ -30,13 +30,43 @@ class SID_Settings(PropertyGroup):
     quality: EnumProperty(
         name="Quality",
         items=(
-            ('LOW', 'Low', "Low final quality (fast compositing time, uses least memory)"),
-            ('MEDIUM', 'Medium', "Medium final quality (moderate compositing time, uses a little more memory)"),
-            ('HIGH', 'High', "High final quality (slower compositing time, uses significantly more memory)"),
+            ('LOW', 'Low', "Low final quality (fast compositing time, uses least memory, lowest quality)"),
+            ('MEDIUM', 'Medium', "Medium final quality (moderate compositing time, uses a little more memory, normal quality)"),
+            ('HIGH', 'High', "High final quality (slower compositing time, uses significantly more memory, highest quality)"),
         ),
         default='HIGH',
-        description="Choose the quality of the final denoised image. Affects memory used for compositing."
+        description="Choose the quality of the final denoised image. Affects memory usage and speed for compositing."
     )
+    
+    use_diffuse: BoolProperty(
+        name="Diffuse",
+        default=True,
+        description="Check if you have Diffuse materials in your scene"
+        )
+    
+    use_glossyness: BoolProperty(
+        name="Glossy",
+        default=True,
+        description="Check if you have Glossy materials in your scene"
+        )
+    
+    use_emission: BoolProperty(
+        name="Emission",
+        default=True,
+        description="Check if you have Emissive materials in your scene"
+        )
+    
+    use_transmission: BoolProperty(
+        name="Transmission",
+        default=False,
+        description="Check if you have Transmissive materials in your scene"
+        )
+    
+    use_volumetric: BoolProperty(
+        name="Volume",
+        default=False,
+        description="Check if you have Volumetric materials in your scene"
+        )
 
 
 class SID_Create(Operator):
@@ -47,9 +77,13 @@ class SID_Create(Operator):
     bl_description = "Enables all the necessary passes, Creates all the nodes you need, connects them all for you, to save the time you don't need to waste"
 
     def execute(self, context):
-
+        
         scene = context.scene
         settings = scene.sid_settings
+        
+        
+        print(settings.use_diffuse)
+
 
         Quality = settings.quality
         print(f'Selected quality: {Quality}')
@@ -87,10 +121,22 @@ class SID_Create(Operator):
         output_node = SID_tree.nodes.new("NodeGroupOutput")
         output_node.location = (2200, 0)
         
+        
+        
                 
         SID_tree.inputs.new("NodeSocketVector", "Denoising Normal")
         SID_tree.inputs.new("NodeSocketColor", "Denoising Albedo")
         SID_tree.inputs.new("NodeSocketColor", "Alpha")
+        
+        
+        
+        SID_denoiser = bpy.data.node_groups.new(type="CompositorNodeTree", name=".Denoiser")
+                
+        SID_denoiser_node = SID_tree.nodes.new("CompositorNodeGroup")
+        SID_denoiser_node.node_tree = SID_denoiser
+        SID_denoiser_node.name = "sid_denoiser_node"
+        
+        
         
                 ##DIFFUSE##
         SID_tree.inputs.new("NodeSocketColor", "DiffDir")
@@ -109,6 +155,8 @@ class SID_Create(Operator):
         DifMul = SID_tree.nodes.new(type="CompositorNodeMixRGB")
         DifMul.blend_type = "MULTIPLY"
         DifMul.location = 400, 1400
+        
+        
         
         #link nodes
         SID_tree.links.new(input_node.outputs['DiffInd'], DifIdr.inputs[0])
@@ -286,7 +334,7 @@ class SID_Create(Operator):
         SID_tree.links.new(Seperate.outputs["B"],Combine.inputs["B"])                        
         SID_tree.links.new(input_node.outputs["Alpha"],Combine.inputs["A"])                        
         SID_tree.links.new(FinalDN.outputs[0],Seperate.inputs[0])
-        
+
         ViewLayerDisplace = 0
         for x in bpy.context.scene.view_layers:
             
@@ -413,16 +461,37 @@ class SID_PT_Panel(Panel):
         if bpy.context.scene.use_nodes == True:
             Warn = layout.row()
             Warn.label(text="Compositor nodes activated!", icon='ERROR')
-            Inform = layout.row()
-            Inform.label(text="       Don't worry if you just added SID!", icon='NONE')
+            Inform1 = layout.row()
+            Inform1.label(text="       Using SID will delete all compositor nodes!", icon='NONE')
+            Inform2 = layout.row()
+            Inform2.label(text="       Ignore if you just added SID!", icon='NONE')
         layout.separator()
 
         Quality = layout.row()
         Quality.prop(settings, "quality")
         layout.separator()
-
+        
+        use_diff = layout.row(align=True)
+        use_diff.prop(settings, "use_diffuse", text="Use Diffuse Pass")
+        
+        use_glos = layout.row(align=True)
+        use_glos.prop(settings, "use_glossyness", text="Use Glossy Pass")
+        
+        use_emit = layout.row(align=True)
+        use_emit.prop(settings, "use_emission", text="Use Emision Pass")
+        
+        use_tran = layout.row(align=True)
+        use_tran.prop(settings, "use_transmission", text="Use Transmission Pass")
+        
+        use_volume = layout.row(align=True)
+        use_volume.prop(settings, "use_volumetric", text="Use Volumetric Pass")
+        
+        
         Button = layout.row()
         Button.operator("object.superimagedenoise")
+
+
+
 
 
 # Register classes
@@ -436,9 +505,8 @@ def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-
+        
     bpy.types.Scene.sid_settings = PointerProperty(type=SID_Settings)
-
 
 def unregister():
     from bpy.utils import unregister_class
