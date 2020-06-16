@@ -272,11 +272,6 @@ def create_sid_super_denoiser_group(sid_denoiser_tree):
     SID_tree.links.new(input_node.outputs['VolumeInd'], volume_denoiser_node.inputs['Indirect'])
 
 
-    # Standard Denoise
-    StandardDN = SID_tree.nodes.new(type="CompositorNodeDenoise")
-    StandardDN.location = 1600, -200
-
-
     ##ADD IT ALL TOGETHER##
     add_diffuse_glossy = SID_tree.nodes.new(type="CompositorNodeMixRGB")
     add_diffuse_glossy.blend_type = "ADD"
@@ -328,23 +323,18 @@ def create_sid_super_denoiser_group(sid_denoiser_tree):
     SID_tree.links.new(add_environment.outputs[0], final_dn.inputs[0])
     SID_tree.links.new(input_node.outputs['Denoising Normal'], final_dn.inputs[1])
     SID_tree.links.new(input_node.outputs['Denoising Albedo'], final_dn.inputs[2])
-    SID_tree.links.new(input_node.outputs['Noisy Image'], StandardDN.inputs[0])
-    SID_tree.links.new(input_node.outputs['Denoising Normal'], StandardDN.inputs[1])
-    SID_tree.links.new(input_node.outputs['Denoising Albedo'], StandardDN.inputs[2])
 
     SID_tree.outputs.new("NodeSocketColor", "Denoised Image")
     SID_tree.outputs.new("NodeSocketColor", "Denoised Diffuse")
     SID_tree.outputs.new("NodeSocketColor", "Denoised Glossy")
     SID_tree.outputs.new("NodeSocketColor", "Denoised Transmission")
     SID_tree.outputs.new("NodeSocketColor", "Denoised Volume")
-    SID_tree.outputs.new("NodeSocketColor", "Standard Denoiser")
 
     SID_tree.links.new(Combine.outputs[0], output_node.inputs["Denoised Image"])
     SID_tree.links.new(diffuse_denoiser_node.outputs['Denoised Image'], output_node.inputs['Denoised Diffuse'])
     SID_tree.links.new(glossy_denoiser_node.outputs['Denoised Image'], output_node.inputs['Denoised Glossy'])
     SID_tree.links.new(transmission_denoiser_node.outputs['Denoised Image'], output_node.inputs["Denoised Transmission"])
     SID_tree.links.new(volume_denoiser_node.outputs['Denoised Image'], output_node.inputs["Denoised Volume"])
-    SID_tree.links.new(StandardDN.outputs[0], output_node.inputs["Standard Denoiser"])
     SID_tree.links.new(Seperate.outputs["R"], Combine.inputs["R"])
     SID_tree.links.new(Seperate.outputs["G"], Combine.inputs["G"])
     SID_tree.links.new(Seperate.outputs["B"], Combine.inputs["B"])
