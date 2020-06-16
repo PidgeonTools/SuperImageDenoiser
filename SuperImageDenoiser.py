@@ -63,7 +63,7 @@ def create_sid_denoiser_high():
     SID_denoiser_tree.inputs.new("NodeSocketColor", "Indirect")
     SID_denoiser_tree.inputs.new("NodeSocketColor", "Color")
     SID_denoiser_tree.inputs.new("NodeSocketColor", "Denoising Normal")
-    SID_denoiser_tree.inputs.new("NodeSocketColor", "Denoising Albedo")
+    SID_denoiser_tree.inputs.new("NodeSocketVector", "Denoising Albedo")
     SID_denoiser_tree.inputs['Color'].default_value = (1, 1, 1, 1)
 
     SID_denoiser_tree.outputs.new("NodeSocketColor", "Denoised Image")
