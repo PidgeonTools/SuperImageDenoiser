@@ -1,16 +1,3 @@
-bl_info = {
-    "name": "Super Image Denoiser (SID)",
-    "author": "Kevin Lorengel",
-    "version": (2, 2),
-    "blender": (2, 83, 0),
-    "location": "Properties > Render > Create Super Denoiser",
-    "description": "SID denoises your Cycles renders near perfectly, with only one click!",
-    "warning": "",
-    "wiki_url": "https://discord.gg/cnFdGQP",
-    "category": "Compositor",
-}
-
-# Imports
 import bpy
 from bpy.types import (
     Operator,
@@ -30,9 +17,9 @@ class SID_Settings(PropertyGroup):
     quality: EnumProperty(
         name="Quality",
         items=(
-            ('LOW', 'Low', "Low final quality (fast compositing time, uses least memory, lowest quality)"),
-            ('MEDIUM', 'Medium', "Medium final quality (moderate compositing time, uses a little more memory, normal quality)"),
-            ('HIGH', 'High', "High final quality (slower compositing time, uses significantly more memory, highest quality)"),
+            ('NORMAL', 'Normal quality / Fastest', "Standard denoiser quality (fast compositing time, uses least memory)"),
+            ('EXTRA', 'Extra quality / Slower', "Extra denoiser quality (moderate compositing time, uses a little more memory)"),
+            ('HIGH', 'Highest quality / Slowest', "Highest denoiser quality (slower compositing time, uses significantly more memory)"),
         ),
         default='HIGH',
         description="Choose the quality of the final denoised image. Affects memory usage and speed for compositing."
@@ -71,31 +58,27 @@ class SID_Settings(PropertyGroup):
 
 class SID_Create(Operator):
 
-    
     bl_idname = "object.superimagedenoise"
     bl_label = "Add Super Denoiser"
     bl_description = "Enables all the necessary passes, Creates all the nodes you need, connects them all for you, to save the time you don't need to waste"
 
     def execute(self, context):
-        
+
         scene = context.scene
         settings = scene.sid_settings
-        
-        
-        print(settings.use_diffuse)
 
-
-        Quality = settings.quality
-        print(f'Selected quality: {Quality}')
+        if settings.quality == 'HIGH':
+            print('Whoa, super-fancy high quality!')
+        elif settings.quality == 'EXTRA':
+            print('OK, a little bit extra quality, but don\'t go overboard...')
+        else:
+            print('Just standard, basic, default, boring, normal quality.')
 
         # Initialise important settings
         scene.use_nodes = True
         RenderLayer = 0
         
-        bpc = bpy.context.scene
-        bpc.use_nodes = True
-        
-        bpvl = bpc.view_layers[RenderLayer]
+        bpvl = scene.view_layers[RenderLayer]
         
 
         #Clear Compositor
@@ -503,9 +486,10 @@ classes = (
 
 def register():
     from bpy.utils import register_class
+
     for cls in classes:
         register_class(cls)
-        
+
     bpy.types.Scene.sid_settings = PointerProperty(type=SID_Settings)
 
 def unregister():
@@ -515,6 +499,3 @@ def unregister():
 
     for cls in reversed(classes):
         unregister_class(cls)
-
-if __name__ == "__main__":
-    register()
