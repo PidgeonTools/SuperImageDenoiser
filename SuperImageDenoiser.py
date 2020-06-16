@@ -51,7 +51,7 @@ class SID_Settings(PropertyGroup):
 
 
 def create_sid_denoiser_super():
-    # Create dual denoiser node group
+    # Create SUPER quality dual denoiser node group
     SID_denoiser_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".Denoiser.HQ")
     SID_denoiser_input_node = SID_denoiser_tree.nodes.new("NodeGroupInput")
     SID_denoiser_input_node.location = (-200, 0)
@@ -99,8 +99,8 @@ def create_sid_denoiser_super():
     return SID_denoiser_tree
 
 
-def create_sid_denoiser_mid():
-    # Create dual denoiser node group
+def create_sid_denoiser_high():
+    # Create high quality dual denoiser node group
     SID_denoiser_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".Denoiser.HQ")
     SID_denoiser_input_node = SID_denoiser_tree.nodes.new("NodeGroupInput")
     SID_denoiser_input_node.location = (-200, 0)
@@ -142,6 +142,314 @@ def create_sid_denoiser_mid():
     return SID_denoiser_tree
 
 
+def create_sid_denoiser_standard():
+    # Create standard quality denoiser node group
+
+    SID_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
+    input_node = SID_tree.nodes.new("NodeGroupInput")
+    input_node.location = (-200, 0)
+
+    output_node = SID_tree.nodes.new("NodeGroupOutput")
+    output_node.location = (800, 0)
+
+    SID_tree.inputs.new("NodeSocketColor", "Noisy Image")
+    SID_tree.inputs.new("NodeSocketVector", "Denoising Normal")
+    SID_tree.inputs.new("NodeSocketColor", "Denoising Albedo")
+    SID_tree.inputs.new("NodeSocketColor", "Alpha")
+
+
+    # Standard Denoiser
+    standard_dn = SID_tree.nodes.new(type="CompositorNodeDenoise")
+    standard_dn.location = (0, 100)
+
+
+    ##ADD IT ALL TOGETHER##
+    Seperate = SID_tree.nodes.new(type="CompositorNodeSepRGBA")
+    Seperate.location = (400, 100)
+    Combine = SID_tree.nodes.new(type="CompositorNodeCombRGBA")
+    Combine.location = (600, 100)
+
+    # Link nodes
+    SID_tree.links.new(input_node.outputs['Noisy Image'], standard_dn.inputs[0])
+    SID_tree.links.new(input_node.outputs['Denoising Normal'], standard_dn.inputs[1])
+    SID_tree.links.new(input_node.outputs['Denoising Albedo'], standard_dn.inputs[2])
+
+    SID_tree.outputs.new("NodeSocketColor", "Denoised Image")
+    SID_tree.outputs.new("NodeSocketColor", "Standard Denoiser")
+
+    SID_tree.links.new(standard_dn.outputs[0], output_node.inputs["Standard Denoiser"])
+    SID_tree.links.new(standard_dn.outputs[0], Seperate.inputs[0])
+    SID_tree.links.new(Seperate.outputs["R"], Combine.inputs["R"])
+    SID_tree.links.new(Seperate.outputs["G"], Combine.inputs["G"])
+    SID_tree.links.new(Seperate.outputs["B"], Combine.inputs["B"])
+    SID_tree.links.new(input_node.outputs["Alpha"], Combine.inputs["A"])
+    SID_tree.links.new(Combine.outputs[0], output_node.inputs["Denoised Image"])
+
+    return SID_tree
+
+
+
+def create_sid_super_denoiser_group(sid_denoiser_tree):
+    # Creates a super denoiser node group using the provided subgroup
+
+    SID_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
+    input_node = SID_tree.nodes.new("NodeGroupInput")
+    input_node.location = (-200, 0)
+
+    output_node = SID_tree.nodes.new("NodeGroupOutput")
+    output_node.location = (1800, 0)
+
+    SID_tree.inputs.new("NodeSocketColor", "Noisy Image")
+    SID_tree.inputs.new("NodeSocketVector", "Denoising Normal")
+    SID_tree.inputs.new("NodeSocketColor", "Denoising Albedo")
+    SID_tree.inputs.new("NodeSocketColor", "Alpha")
+
+    # Add instances of the dual denoiser
+
+    ##DIFFUSE##
+    SID_tree.inputs.new("NodeSocketColor", "DiffDir")
+    SID_tree.inputs.new("NodeSocketColor", "DiffInd")
+    SID_tree.inputs.new("NodeSocketColor", "DiffCol")
+    diffuse_denoiser_node = SID_tree.nodes.new("CompositorNodeGroup")
+    diffuse_denoiser_node.node_tree = sid_denoiser_tree
+    diffuse_denoiser_node.location = (0, 600)
+    diffuse_denoiser_node.name = "Denoise Diffuse"
+    diffuse_denoiser_node.label = "Denoise Diffuse"
+
+    # link nodes
+    SID_tree.links.new(input_node.outputs['DiffDir'], diffuse_denoiser_node.inputs['Direct'])
+    SID_tree.links.new(input_node.outputs['DiffInd'], diffuse_denoiser_node.inputs['Indirect'])
+    SID_tree.links.new(input_node.outputs['DiffCol'], diffuse_denoiser_node.inputs['Color'])
+    SID_tree.links.new(input_node.outputs['Denoising Normal'], diffuse_denoiser_node.inputs['Denoising Normal'])
+    SID_tree.links.new(input_node.outputs['Denoising Albedo'], diffuse_denoiser_node.inputs['Denoising Albedo'])
+
+
+    ##GLOSSY##
+    SID_tree.inputs.new("NodeSocketColor", "GlossDir")
+    SID_tree.inputs.new("NodeSocketColor", "GlossInd")
+    SID_tree.inputs.new("NodeSocketColor", "GlossCol")
+    glossy_denoiser_node = SID_tree.nodes.new("CompositorNodeGroup")
+    glossy_denoiser_node.node_tree = sid_denoiser_tree
+    glossy_denoiser_node.location = (0, 400)
+    glossy_denoiser_node.name = "Denoise Glossy"
+    glossy_denoiser_node.label = "Denoise Glossy"
+
+    # Link nodes
+    SID_tree.links.new(input_node.outputs['GlossDir'], glossy_denoiser_node.inputs['Direct'])
+    SID_tree.links.new(input_node.outputs['GlossInd'], glossy_denoiser_node.inputs['Indirect'])
+    SID_tree.links.new(input_node.outputs['GlossCol'], glossy_denoiser_node.inputs['Color'])
+    SID_tree.links.new(input_node.outputs['Denoising Normal'], glossy_denoiser_node.inputs['Denoising Normal'])
+    SID_tree.links.new(input_node.outputs['Denoising Albedo'], glossy_denoiser_node.inputs['Denoising Albedo'])
+
+
+    ##TRANSMISSION##
+    SID_tree.inputs.new("NodeSocketColor", "TransDir")
+    SID_tree.inputs.new("NodeSocketColor", "TransInd")
+    SID_tree.inputs.new("NodeSocketColor", "TransCol")
+    transmission_denoiser_node = SID_tree.nodes.new("CompositorNodeGroup")
+    transmission_denoiser_node.node_tree = sid_denoiser_tree
+    transmission_denoiser_node.location = (0, 200)
+    transmission_denoiser_node.name = "Denoise Transmission"
+    transmission_denoiser_node.label = "Denoise Transmission"
+
+    # Link nodes
+    SID_tree.links.new(input_node.outputs['TransDir'], transmission_denoiser_node.inputs['Direct'])
+    SID_tree.links.new(input_node.outputs['TransInd'], transmission_denoiser_node.inputs['Indirect'])
+    SID_tree.links.new(input_node.outputs['TransCol'], transmission_denoiser_node.inputs['Color'])
+
+
+    ##VOLUMES##
+    SID_tree.inputs.new("NodeSocketColor", "VolumeDir")
+    SID_tree.inputs.new("NodeSocketColor", "VolumeInd")
+    volume_denoiser_node = SID_tree.nodes.new("CompositorNodeGroup")
+    volume_denoiser_node.node_tree = sid_denoiser_tree
+    volume_denoiser_node.location = (0, 0)
+    volume_denoiser_node.name = "Denoise Volume"
+    volume_denoiser_node.label = "Denoise Volume"
+
+    # Link nodes
+    SID_tree.links.new(input_node.outputs['VolumeDir'], volume_denoiser_node.inputs['Direct'])
+    SID_tree.links.new(input_node.outputs['VolumeInd'], volume_denoiser_node.inputs['Indirect'])
+
+
+    # Standard Denoise
+    StandardDN = SID_tree.nodes.new(type="CompositorNodeDenoise")
+    StandardDN.location = 1600, -200
+
+
+    ##ADD IT ALL TOGETHER##
+    add_diffuse_glossy = SID_tree.nodes.new(type="CompositorNodeMixRGB")
+    add_diffuse_glossy.blend_type = "ADD"
+    add_diffuse_glossy.inputs[2].default_value = (0,0,0,1)
+    add_diffuse_glossy.location = (200, 500)
+
+    add_trans = SID_tree.nodes.new(type="CompositorNodeMixRGB")
+    add_trans.blend_type = "ADD"
+    add_trans.inputs[2].default_value = (0,0,0,1)
+    add_trans.location = (400, 400)
+
+    add_volume = SID_tree.nodes.new(type="CompositorNodeMixRGB")
+    add_volume.blend_type = "ADD"
+    add_volume.inputs[2].default_value = (0,0,0,1)
+    add_volume.location = (600, 300)
+
+    add_emission = SID_tree.nodes.new(type="CompositorNodeMixRGB")
+    add_emission.blend_type = "ADD"
+    add_emission.inputs[2].default_value = (0,0,0,1)
+    add_emission.location = (800, 200)
+
+    add_environment = SID_tree.nodes.new(type="CompositorNodeMixRGB")
+    add_environment.blend_type = "ADD"
+    add_environment.inputs[2].default_value = (0,0,0,1)
+    add_environment.location = (1000, 100)
+
+    final_dn = SID_tree.nodes.new(type="CompositorNodeDenoise")
+    final_dn.location = (1200, 100)
+
+    SID_tree.inputs.new("NodeSocketColor", "Emit")
+    SID_tree.inputs.new("NodeSocketColor", "Env")
+
+    Seperate = SID_tree.nodes.new(type="CompositorNodeSepRGBA")
+    Seperate.location = (1400, 100)
+    Combine = SID_tree.nodes.new(type="CompositorNodeCombRGBA")
+    Combine.location = (1600, 100)
+
+    # Link nodes
+    SID_tree.links.new(diffuse_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[1])
+    SID_tree.links.new(glossy_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[2])
+    SID_tree.links.new(add_diffuse_glossy.outputs[0], add_trans.inputs[1])
+    SID_tree.links.new(transmission_denoiser_node.outputs['Denoised Image'], add_trans.inputs[2])
+    SID_tree.links.new(add_trans.outputs[0], add_volume.inputs[1])
+    SID_tree.links.new(volume_denoiser_node.outputs['Denoised Image'], add_volume.inputs[2])
+    SID_tree.links.new(add_volume.outputs[0], add_emission.inputs[1])
+    SID_tree.links.new(input_node.outputs['Emit'], add_emission.inputs[2])
+    SID_tree.links.new(add_emission.outputs[0], add_environment.inputs[1])
+    SID_tree.links.new(input_node.outputs['Env'], add_environment.inputs[2])
+    SID_tree.links.new(add_environment.outputs[0], final_dn.inputs[0])
+    SID_tree.links.new(input_node.outputs['Denoising Normal'], final_dn.inputs[1])
+    SID_tree.links.new(input_node.outputs['Denoising Albedo'], final_dn.inputs[2])
+    SID_tree.links.new(input_node.outputs['Noisy Image'], StandardDN.inputs[0])
+    SID_tree.links.new(input_node.outputs['Denoising Normal'], StandardDN.inputs[1])
+    SID_tree.links.new(input_node.outputs['Denoising Albedo'], StandardDN.inputs[2])
+
+    SID_tree.outputs.new("NodeSocketColor", "Denoised Image")
+    SID_tree.outputs.new("NodeSocketColor", "Denoised Diffuse")
+    SID_tree.outputs.new("NodeSocketColor", "Denoised Glossy")
+    SID_tree.outputs.new("NodeSocketColor", "Denoised Transmission")
+    SID_tree.outputs.new("NodeSocketColor", "Denoised Volume")
+    SID_tree.outputs.new("NodeSocketColor", "Standard Denoiser")
+
+    SID_tree.links.new(Combine.outputs[0], output_node.inputs["Denoised Image"])
+    SID_tree.links.new(diffuse_denoiser_node.outputs['Denoised Image'], output_node.inputs['Denoised Diffuse'])
+    SID_tree.links.new(glossy_denoiser_node.outputs['Denoised Image'], output_node.inputs['Denoised Glossy'])
+    SID_tree.links.new(transmission_denoiser_node.outputs['Denoised Image'], output_node.inputs["Denoised Transmission"])
+    SID_tree.links.new(volume_denoiser_node.outputs['Denoised Image'], output_node.inputs["Denoised Volume"])
+    SID_tree.links.new(StandardDN.outputs[0], output_node.inputs["Standard Denoiser"])
+    SID_tree.links.new(Seperate.outputs["R"], Combine.inputs["R"])
+    SID_tree.links.new(Seperate.outputs["G"], Combine.inputs["G"])
+    SID_tree.links.new(Seperate.outputs["B"], Combine.inputs["B"])
+    SID_tree.links.new(input_node.outputs["Alpha"], Combine.inputs["A"])
+    SID_tree.links.new(final_dn.outputs[0], Seperate.inputs[0])
+
+    return SID_tree
+
+
+
+def create_sid_super_group(standard_denoiser_tree, high_denoiser_tree, super_denoiser_tree):
+    # TODO: better name?
+    SID_super_group = bpy.data.node_groups.new(type='CompositorNodeTree', name=".SuperImageDenoiser.SuperGroup")
+    input_node = SID_super_group.nodes.new("NodeGroupInput")
+    input_node.location = (-200, 0)
+
+    output_node = SID_super_group.nodes.new("NodeGroupOutput")
+    output_node.location = (1800, 0)
+
+    SID_super_group.inputs.new("NodeSocketColor", "Noisy Image")
+    SID_super_group.inputs.new("NodeSocketVector", "Denoising Normal")
+    SID_super_group.inputs.new("NodeSocketColor", "Denoising Albedo")
+    SID_super_group.inputs.new("NodeSocketColor", "Alpha")
+    SID_super_group.inputs.new("NodeSocketColor", "DiffDir")
+    SID_super_group.inputs.new("NodeSocketColor", "DiffInd")
+    SID_super_group.inputs.new("NodeSocketColor", "DiffCol")
+    SID_super_group.inputs.new("NodeSocketColor", "GlossDir")
+    SID_super_group.inputs.new("NodeSocketColor", "GlossInd")
+    SID_super_group.inputs.new("NodeSocketColor", "GlossCol")
+    SID_super_group.inputs.new("NodeSocketColor", "TransDir")
+    SID_super_group.inputs.new("NodeSocketColor", "TransInd")
+    SID_super_group.inputs.new("NodeSocketColor", "TransCol")
+    SID_super_group.inputs.new("NodeSocketColor", "VolumeDir")
+    SID_super_group.inputs.new("NodeSocketColor", "VolumeInd")
+    SID_super_group.inputs.new("NodeSocketColor", "Emit")
+    SID_super_group.inputs.new("NodeSocketColor", "Env")
+
+    SID_super_group.outputs.new("NodeSocketColor", "Standard Quality")
+    SID_super_group.outputs.new("NodeSocketColor", "High Quality")
+    SID_super_group.outputs.new("NodeSocketColor", "SUPER Quality")
+
+
+    standard_denoiser_node = SID_super_group.nodes.new("CompositorNodeGroup")
+    standard_denoiser_node.node_tree = standard_denoiser_tree
+    standard_denoiser_node.location = (0, 900)
+    standard_denoiser_node.name = "Standard Denoiser"
+    standard_denoiser_node.label = "Standard Denoiser"
+
+    high_denoiser_node = SID_super_group.nodes.new("CompositorNodeGroup")
+    high_denoiser_node.node_tree = high_denoiser_tree
+    high_denoiser_node.location = (0, 600)
+    high_denoiser_node.name = "High Quality Denoiser"
+    high_denoiser_node.label = "High Quality Denoiser"
+
+    super_denoiser_node = SID_super_group.nodes.new("CompositorNodeGroup")
+    super_denoiser_node.node_tree = super_denoiser_tree
+    super_denoiser_node.location = (0, 0)
+    super_denoiser_node.name = "SUPER Denoiser"
+    super_denoiser_node.label = "SUPER Denoiser"
+
+
+    # Standard
+    input_sockets = [
+        "Noisy Image",
+        "Denoising Normal",
+        "Denoising Albedo",
+        "Alpha",
+    ]
+    for input in input_sockets:
+        SID_super_group.links.new(input_node.outputs[input], standard_denoiser_node.inputs[input])
+
+    # High & SUPER
+    input_sockets = [
+        "Noisy Image",
+        "Denoising Normal",
+        "Denoising Albedo",
+        "Alpha",
+        "DiffDir",
+        "DiffInd",
+        "DiffCol",
+        "GlossDir",
+        "GlossInd",
+        "GlossCol",
+        "TransDir",
+        "TransInd",
+        "TransCol",
+        "VolumeDir",
+        "VolumeInd",
+        "Emit",
+        "Env",
+    ]
+    for input in input_sockets:
+        SID_super_group.links.new(input_node.outputs[input], super_denoiser_node.inputs[input])
+        SID_super_group.links.new(input_node.outputs[input], high_denoiser_node.inputs[input])
+
+
+    SID_super_group.links.new(standard_denoiser_node.outputs['Denoised Image'], output_node.inputs['Standard Quality'])
+    SID_super_group.links.new(high_denoiser_node.outputs['Denoised Image'], output_node.inputs['High Quality'])
+    SID_super_group.links.new(super_denoiser_node.outputs['Denoised Image'], output_node.inputs['SUPER Quality'])
+
+    return SID_super_group
+
+
+
+
 class SID_Create(Operator):
 
     bl_idname = "object.superimagedenoise"
@@ -152,13 +460,6 @@ class SID_Create(Operator):
 
         scene = context.scene
         settings = scene.sid_settings
-
-        if settings.quality == 'SUPER':
-            print('Whoa, super-fancy high quality!')
-        elif settings.quality == 'HIGH':
-            print('OK, a little bit extra quality, but don\'t go overboard...')
-        else: # STANDARD
-            print('Just standard, basic, default, boring, normal quality.')
 
         # Initialise important settings
         scene.render.engine = 'CYCLES'
@@ -175,178 +476,14 @@ class SID_Create(Operator):
 
 
         #SID
-        SID_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
-        input_node = SID_tree.nodes.new("NodeGroupInput")
-        input_node.location = (-200, 0)
-
-        output_node = SID_tree.nodes.new("NodeGroupOutput")
-        output_node.location = (1800, 0)
-
-
-
-
-        SID_tree.inputs.new("NodeSocketColor", "Noisy Image")
-        SID_tree.inputs.new("NodeSocketVector", "Denoising Normal")
-        SID_tree.inputs.new("NodeSocketColor", "Denoising Albedo")
-        SID_tree.inputs.new("NodeSocketColor", "Alpha")
-
-
 
         # Create dual denoiser node group
-        # TODO: if we want to create all three groups at once, remove the IF and use 2 names
-        if settings.quality == 'SUPER':
-            SID_denoiser_tree = create_sid_denoiser_super()
-        else:
-            SID_denoiser_tree = create_sid_denoiser_mid()
+        SID_standard_tree = create_sid_denoiser_standard()
+        SID_high_tree = create_sid_super_denoiser_group(create_sid_denoiser_high())
+        SID_super_tree = create_sid_super_denoiser_group(create_sid_denoiser_super())
 
+        SID_super_group = create_sid_super_group(SID_standard_tree, SID_high_tree, SID_super_tree)
 
-
-        # Add instances of the dual denoiser
-
-        ##DIFFUSE##
-        SID_tree.inputs.new("NodeSocketColor", "DiffDir")
-        SID_tree.inputs.new("NodeSocketColor", "DiffInd")
-        SID_tree.inputs.new("NodeSocketColor", "DiffCol")
-        diffuse_denoiser_node = SID_tree.nodes.new("CompositorNodeGroup")
-        diffuse_denoiser_node.node_tree = SID_denoiser_tree
-        diffuse_denoiser_node.location = (0, 600)
-        diffuse_denoiser_node.name = "Denoise Diffuse"
-        diffuse_denoiser_node.label = "Denoise Diffuse"
-
-        # link nodes
-        SID_tree.links.new(input_node.outputs['DiffDir'], diffuse_denoiser_node.inputs['Direct'])
-        SID_tree.links.new(input_node.outputs['DiffInd'], diffuse_denoiser_node.inputs['Indirect'])
-        SID_tree.links.new(input_node.outputs['DiffCol'], diffuse_denoiser_node.inputs['Color'])
-        SID_tree.links.new(input_node.outputs['Denoising Normal'], diffuse_denoiser_node.inputs['Denoising Normal'])
-        SID_tree.links.new(input_node.outputs['Denoising Albedo'], diffuse_denoiser_node.inputs['Denoising Albedo'])
-
-
-        ##GLOSSY##
-        SID_tree.inputs.new("NodeSocketColor", "GlossDir")
-        SID_tree.inputs.new("NodeSocketColor", "GlossInd")
-        SID_tree.inputs.new("NodeSocketColor", "GlossCol")
-        glossy_denoiser_node = SID_tree.nodes.new("CompositorNodeGroup")
-        glossy_denoiser_node.node_tree = SID_denoiser_tree
-        glossy_denoiser_node.location = (0, 400)
-        glossy_denoiser_node.name = "Denoise Glossy"
-        glossy_denoiser_node.label = "Denoise Glossy"
-
-        # Link nodes
-        SID_tree.links.new(input_node.outputs['GlossDir'], glossy_denoiser_node.inputs['Direct'])
-        SID_tree.links.new(input_node.outputs['GlossInd'], glossy_denoiser_node.inputs['Indirect'])
-        SID_tree.links.new(input_node.outputs['GlossCol'], glossy_denoiser_node.inputs['Color'])
-        SID_tree.links.new(input_node.outputs['Denoising Normal'], glossy_denoiser_node.inputs['Denoising Normal'])
-        SID_tree.links.new(input_node.outputs['Denoising Albedo'], glossy_denoiser_node.inputs['Denoising Albedo'])
-
-
-        ##TRANSMISSION##
-        SID_tree.inputs.new("NodeSocketColor", "TransDir")
-        SID_tree.inputs.new("NodeSocketColor", "TransInd")
-        SID_tree.inputs.new("NodeSocketColor", "TransCol")
-        transmission_denoiser_node = SID_tree.nodes.new("CompositorNodeGroup")
-        transmission_denoiser_node.node_tree = SID_denoiser_tree
-        transmission_denoiser_node.location = (0, 200)
-        transmission_denoiser_node.name = "Denoise Transmission"
-        transmission_denoiser_node.label = "Denoise Transmission"
-
-        # Link nodes
-        SID_tree.links.new(input_node.outputs['TransDir'], transmission_denoiser_node.inputs['Direct'])
-        SID_tree.links.new(input_node.outputs['TransInd'], transmission_denoiser_node.inputs['Indirect'])
-        SID_tree.links.new(input_node.outputs['TransCol'], transmission_denoiser_node.inputs['Color'])
-
-
-        ##VOLUMES##
-        SID_tree.inputs.new("NodeSocketColor", "VolumeDir")
-        SID_tree.inputs.new("NodeSocketColor", "VolumeInd")
-        volume_denoiser_node = SID_tree.nodes.new("CompositorNodeGroup")
-        volume_denoiser_node.node_tree = SID_denoiser_tree
-        volume_denoiser_node.location = (0, 0)
-        volume_denoiser_node.name = "Denoise Volume"
-        volume_denoiser_node.label = "Denoise Volume"
-
-        # Link nodes
-        SID_tree.links.new(input_node.outputs['VolumeDir'], volume_denoiser_node.inputs['Direct'])
-        SID_tree.links.new(input_node.outputs['VolumeInd'], volume_denoiser_node.inputs['Indirect'])
-
-
-        # Standard Denoise
-        StandardDN = SID_tree.nodes.new(type="CompositorNodeDenoise")
-        StandardDN.location = 1600, -200
-
-
-        ##ADD IT ALL TOGETHER##
-        add_diffuse_glossy = SID_tree.nodes.new(type="CompositorNodeMixRGB")
-        add_diffuse_glossy.blend_type = "ADD"
-        add_diffuse_glossy.inputs[2].default_value = (0,0,0,1)
-        add_diffuse_glossy.location = (200, 500)
-
-        add_trans = SID_tree.nodes.new(type="CompositorNodeMixRGB")
-        add_trans.blend_type = "ADD"
-        add_trans.inputs[2].default_value = (0,0,0,1)
-        add_trans.location = (400, 400)
-
-        add_volume = SID_tree.nodes.new(type="CompositorNodeMixRGB")
-        add_volume.blend_type = "ADD"
-        add_volume.inputs[2].default_value = (0,0,0,1)
-        add_volume.location = (600, 300)
-
-        add_emission = SID_tree.nodes.new(type="CompositorNodeMixRGB")
-        add_emission.blend_type = "ADD"
-        add_emission.inputs[2].default_value = (0,0,0,1)
-        add_emission.location = (800, 200)
-
-        add_environment = SID_tree.nodes.new(type="CompositorNodeMixRGB")
-        add_environment.blend_type = "ADD"
-        add_environment.inputs[2].default_value = (0,0,0,1)
-        add_environment.location = (1000, 100)
-
-        final_dn = SID_tree.nodes.new(type="CompositorNodeDenoise")
-        final_dn.location = (1200, 100)
-
-        SID_tree.inputs.new("NodeSocketColor", "Emit")
-        SID_tree.inputs.new("NodeSocketColor", "Env")
-
-        Seperate = SID_tree.nodes.new(type="CompositorNodeSepRGBA")
-        Seperate.location = (1400, 100)
-        Combine = SID_tree.nodes.new(type="CompositorNodeCombRGBA")
-        Combine.location = (1600, 100)
-
-        # Link nodes
-        SID_tree.links.new(diffuse_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[1])
-        SID_tree.links.new(glossy_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[2])
-        SID_tree.links.new(add_diffuse_glossy.outputs[0], add_trans.inputs[1])
-        SID_tree.links.new(transmission_denoiser_node.outputs['Denoised Image'], add_trans.inputs[2])
-        SID_tree.links.new(add_trans.outputs[0], add_volume.inputs[1])
-        SID_tree.links.new(volume_denoiser_node.outputs['Denoised Image'], add_volume.inputs[2])
-        SID_tree.links.new(add_volume.outputs[0], add_emission.inputs[1])
-        SID_tree.links.new(input_node.outputs['Emit'], add_emission.inputs[2])
-        SID_tree.links.new(add_emission.outputs[0], add_environment.inputs[1])
-        SID_tree.links.new(input_node.outputs['Env'], add_environment.inputs[2])
-        SID_tree.links.new(add_environment.outputs[0], final_dn.inputs[0])
-        SID_tree.links.new(input_node.outputs['Denoising Normal'], final_dn.inputs[1])
-        SID_tree.links.new(input_node.outputs['Denoising Albedo'], final_dn.inputs[2])
-        SID_tree.links.new(input_node.outputs['Noisy Image'], StandardDN.inputs[0])
-        SID_tree.links.new(input_node.outputs['Denoising Normal'], StandardDN.inputs[1])
-        SID_tree.links.new(input_node.outputs['Denoising Albedo'], StandardDN.inputs[2])
-
-        SID_tree.outputs.new("NodeSocketColor", "Denoised Image")
-        SID_tree.outputs.new("NodeSocketColor", "Denoised Diffuse")
-        SID_tree.outputs.new("NodeSocketColor", "Denoised Glossy")
-        SID_tree.outputs.new("NodeSocketColor", "Denoised Transmission")
-        SID_tree.outputs.new("NodeSocketColor", "Denoised Volume")
-        SID_tree.outputs.new("NodeSocketColor", "Standard Denoiser")
-
-        SID_tree.links.new(Combine.outputs[0], output_node.inputs["Denoised Image"])
-        SID_tree.links.new(diffuse_denoiser_node.outputs['Denoised Image'], output_node.inputs['Denoised Diffuse'])
-        SID_tree.links.new(glossy_denoiser_node.outputs['Denoised Image'], output_node.inputs['Denoised Glossy'])
-        SID_tree.links.new(transmission_denoiser_node.outputs['Denoised Image'], output_node.inputs["Denoised Transmission"])
-        SID_tree.links.new(volume_denoiser_node.outputs['Denoised Image'], output_node.inputs["Denoised Volume"])
-        SID_tree.links.new(StandardDN.outputs[0], output_node.inputs["Standard Denoiser"])
-        SID_tree.links.new(Seperate.outputs["R"], Combine.inputs["R"])
-        SID_tree.links.new(Seperate.outputs["G"], Combine.inputs["G"])
-        SID_tree.links.new(Seperate.outputs["B"], Combine.inputs["B"])
-        SID_tree.links.new(input_node.outputs["Alpha"], Combine.inputs["A"])
-        SID_tree.links.new(final_dn.outputs[0], Seperate.inputs[0])
 
 
         # Create a denoiser for each View Layer
@@ -364,7 +501,7 @@ class SID_Create(Operator):
             Composite_node.location = (400, ViewLayerDisplace)
 
             SID_node = scene.node_tree.nodes.new("CompositorNodeGroup")
-            SID_node.node_tree = SID_tree
+            SID_node.node_tree = SID_super_group
             SID_node.location = (200, ViewLayerDisplace)
             SID_node.name = "sid_node"
 
@@ -484,12 +621,16 @@ class SID_Create(Operator):
                 SID_node.inputs["Denoising Normal"]
                 )
 
-            if settings.quality == 'STANDARD':
-                ntree.links.new(SID_node.outputs["Standard Denoiser"],
+            if settings.quality == 'SUPER':
+                ntree.links.new(SID_node.outputs["SUPER Quality"],
+                    Composite_node.inputs["Image"]
+                    )
+            elif settings.quality == 'HIGH':
+                ntree.links.new(SID_node.outputs["High Quality"],
                     Composite_node.inputs["Image"]
                     )
             else:
-                ntree.links.new(SID_node.outputs["Denoised Image"],
+                ntree.links.new(SID_node.outputs["Standard Quality"],
                     Composite_node.inputs["Image"]
                     )
 
