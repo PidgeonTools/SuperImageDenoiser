@@ -15,44 +15,38 @@ from bpy.props import (
 
 class SID_Settings(PropertyGroup):
     quality: EnumProperty(
-        name="Quality",
+        name="Quality / Compositing speed",
         items=(
-            ('NORMAL', 'Normal quality / Fastest', "Standard denoiser quality (fast compositing time, uses least memory)"),
-            ('EXTRA', 'Extra quality / Slower', "Extra denoiser quality (moderate compositing time, uses a little more memory)"),
-            ('HIGH', 'Highest quality / Slowest', "Highest denoiser quality (slower compositing time, uses significantly more memory)"),
+            ('STANDARD', 'Standard quality / Fastest compositing', "Standard denoiser quality (fast compositing time, uses least memory)"),
+            ('EXTRA', 'Better quality / Slow compositing', "Extra denoiser quality (moderate compositing time, uses a little more memory)"),
+            ('HIGH', 'Highest quality / Slower compositing', "Highest denoiser quality (slower compositing time, uses significantly more memory)"),
         ),
         default='HIGH',
         description="Choose the quality of the final denoised image. Affects memory usage and speed for compositing."
     )
-    
-    use_diffuse: BoolProperty(
-        name="Diffuse",
-        default=True,
-        description="Check if you have Diffuse materials in your scene"
-        )
-    
-    use_glossyness: BoolProperty(
-        name="Glossy",
-        default=True,
-        description="Check if you have Glossy materials in your scene"
-        )
-    
+
     use_emission: BoolProperty(
         name="Emission",
         default=True,
-        description="Check if you have Emissive materials in your scene"
+        description="Enable this if you have Emissive materials in your scene"
         )
-    
+
+    use_environment: BoolProperty(
+        name="Environment",
+        default=True,
+        description="Enable this if you have Environment materials in your scene"
+        )
+
     use_transmission: BoolProperty(
         name="Transmission",
         default=False,
-        description="Check if you have Transmissive materials in your scene"
+        description="Enable this if you have Transmissive materials in your scene"
         )
-    
+
     use_volumetric: BoolProperty(
         name="Volume",
         default=False,
-        description="Check if you have Volumetric materials in your scene"
+        description="Enable this if you have Volumetric materials in your scene"
         )
 
 
@@ -71,25 +65,23 @@ class SID_Create(Operator):
             print('Whoa, super-fancy high quality!')
         elif settings.quality == 'EXTRA':
             print('OK, a little bit extra quality, but don\'t go overboard...')
-        else:
+        else: # STANDARD
             print('Just standard, basic, default, boring, normal quality.')
 
         # Initialise important settings
         scene.render.engine = 'CYCLES'
         scene.use_nodes = True
         RenderLayer = 0
-        
-        bpvl = scene.view_layers[RenderLayer]
-        
+
 
         #Clear Compositor
         ntree = scene.node_tree
 
         for node in ntree.nodes:
             ntree.nodes.remove(node)
-            
 
-        
+
+
         #SID
         SID_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
         input_node = SID_tree.nodes.new("NodeGroupInput")
@@ -97,10 +89,10 @@ class SID_Create(Operator):
 
         output_node = SID_tree.nodes.new("NodeGroupOutput")
         output_node.location = (2200, 0)
-        
-        
-        
-                
+
+
+
+
         SID_tree.inputs.new("NodeSocketVector", "Denoising Normal")
         SID_tree.inputs.new("NodeSocketColor", "Denoising Albedo")
         SID_tree.inputs.new("NodeSocketColor", "Alpha")
@@ -291,11 +283,11 @@ class SID_Create(Operator):
         SID_tree.links.new(DifMul.outputs[0], output_node.inputs["Denoised Diffuse"])
         SID_tree.links.new(GlsMul.outputs[0], output_node.inputs["Denoised Glossy"])
         SID_tree.links.new(TrnMul.outputs[0], output_node.inputs["Denoised Transmission"])
-        SID_tree.links.new(VolAdd.outputs[0], output_node.inputs["Denoised Volume"])                        
-        SID_tree.links.new(Seperate.outputs["R"],Combine.inputs["R"])                        
-        SID_tree.links.new(Seperate.outputs["G"],Combine.inputs["G"])                        
-        SID_tree.links.new(Seperate.outputs["B"],Combine.inputs["B"])                        
-        SID_tree.links.new(input_node.outputs["Alpha"],Combine.inputs["A"])                        
+        SID_tree.links.new(VolAdd.outputs[0], output_node.inputs["Denoised Volume"])
+        SID_tree.links.new(Seperate.outputs["R"],Combine.inputs["R"])
+        SID_tree.links.new(Seperate.outputs["G"],Combine.inputs["G"])
+        SID_tree.links.new(Seperate.outputs["B"],Combine.inputs["B"])
+        SID_tree.links.new(input_node.outputs["Alpha"],Combine.inputs["A"])
         SID_tree.links.new(FinalDN.outputs[0],Seperate.inputs[0])
 
         ViewLayerDisplace = 0
@@ -327,15 +319,15 @@ class SID_Create(Operator):
             view_layer.use_pass_glossy_indirect = True
             view_layer.use_pass_glossy_color = True
             # Transmission
-            view_layer.use_pass_transmission_direct = True
-            view_layer.use_pass_transmission_indirect = True
-            view_layer.use_pass_transmission_color = True
+            view_layer.use_pass_transmission_direct = settings.use_transmission
+            view_layer.use_pass_transmission_indirect = settings.use_transmission
+            view_layer.use_pass_transmission_color = settings.use_transmission
             # Volume
-            view_layer.cycles.use_pass_volume_direct = True
-            view_layer.cycles.use_pass_volume_indirect = True
+            view_layer.cycles.use_pass_volume_direct = settings.use_volumetric
+            view_layer.cycles.use_pass_volume_indirect = settings.use_volumetric
             # Emission & Environment
-            view_layer.use_pass_emit = True
-            view_layer.use_pass_environment = True
+            view_layer.use_pass_emit = settings.use_emission
+            view_layer.use_pass_environment = settings.use_environment
 
 
             ViewLayerDisplace -= 1000
@@ -370,40 +362,44 @@ class SID_Create(Operator):
                 SID_node.inputs["GlossCol"]
                 )
             
-            ntree.links.new(
-                RenLayers_node.outputs["TransDir"],
-                SID_node.inputs["TransDir"]
-                )
+            if settings.use_transmission:
+                ntree.links.new(
+                    RenLayers_node.outputs["TransDir"],
+                    SID_node.inputs["TransDir"]
+                    )
+                
+                ntree.links.new(
+                    RenLayers_node.outputs["TransInd"],
+                    SID_node.inputs["TransInd"]
+                    )
+                
+                ntree.links.new(
+                    RenLayers_node.outputs["TransCol"],
+                    SID_node.inputs["TransCol"]
+                    )
             
-            ntree.links.new(
-                RenLayers_node.outputs["TransInd"],
-                SID_node.inputs["TransInd"]
-                )
+            if settings.use_volumetric:
+                ntree.links.new(
+                    RenLayers_node.outputs["VolumeDir"],
+                    SID_node.inputs["VolumeDir"]
+                    )
+                
+                ntree.links.new(
+                    RenLayers_node.outputs["VolumeInd"],
+                    SID_node.inputs["VolumeInd"]
+                    )
             
-            ntree.links.new(
-                RenLayers_node.outputs["TransCol"],
-                SID_node.inputs["TransCol"]
-                )
+            if settings.use_emission:
+                ntree.links.new(
+                    RenLayers_node.outputs["Emit"],
+                    SID_node.inputs["Emit"]
+                    )
             
-            ntree.links.new(
-                RenLayers_node.outputs["VolumeDir"],
-                SID_node.inputs["VolumeDir"]
-                )
-            
-            ntree.links.new(
-                RenLayers_node.outputs["VolumeInd"],
-                SID_node.inputs["VolumeInd"]
-                )
-            
-            ntree.links.new(
-                RenLayers_node.outputs["Emit"],
-                SID_node.inputs["Emit"]
-                )
-            
-            ntree.links.new(
-                RenLayers_node.outputs["Env"],
-                SID_node.inputs["Env"]
-                )
+            if settings.use_environment:
+                ntree.links.new(
+                    RenLayers_node.outputs["Env"],
+                    SID_node.inputs["Env"]
+                    )
             
             ntree.links.new(
                 RenLayers_node.outputs["Alpha"],
@@ -424,10 +420,6 @@ class SID_Create(Operator):
                 Composite_node.inputs["Image"]
                 )
 
-                
-            
-        
-        
         return {'FINISHED'}
 
 class SID_PT_Panel(Panel):
@@ -438,54 +430,50 @@ class SID_PT_Panel(Panel):
     bl_context = "render"
     bl_category = 'Pidgeon-Tools'
 
+    def draw_header(self, context):
+        layout = self.layout
+        layout.label(text="", icon='SHADERFX')
+
     def draw(self, context):
         layout = self.layout
         scene = context.scene
         settings = scene.sid_settings
 
-
-        Headline = layout.row()
-        Headline.label(text="Click to activate SID", icon='SHADERFX')
-
         if bpy.context.scene.render.engine != 'CYCLES':
-            CyclesWarn = layout.row()
-            CyclesWarn.label(text="Intel Denoiser (OIDN) render passes require Cycles", icon='ERROR')
-            CyclesEnable = layout.row()
-            CyclesEnable.label(text="       The Render Engine will be switched to Cycles", icon='NONE')
+            cycles_warning = layout.column(align=True)
+            cycles_warning.label(text="Intel Denoiser (OIDN) render passes require Cycles.", icon='ERROR')
+            cycles_warning.label(text="       The Render Engine will be switched to Cycles.")
             layout.separator()
 
-
         if bpy.context.scene.use_nodes == True:
-            Warn = layout.row()
-            Warn.label(text="Compositor nodes activated!", icon='ERROR')
-            Inform1 = layout.row()
-            Inform1.label(text="       Using SID will delete all compositor nodes!", icon='NONE')
-            Inform2 = layout.row()
-            Inform2.label(text="       Ignore if you just added SID!", icon='NONE')
+            compositor_warn = layout.column(align=True)
+            compositor_warn.label(text="Compositor nodes detected!", icon='ERROR')
+            compositor_warn.label(text="       Using Super Image Denoiser will delete all compositor nodes!")
+            compositor_warn.label(text="       Ignore if you just added Super Image Denoiser.")
+            layout.separator()
+
+        quality = layout.column(align=True)
+        quality.prop(settings, "quality", text="Quality")
+        if settings.quality == 'STANDARD':
+            quality.label(text="Denoise the whole image in a single pass.", icon='INFO')
+            quality.label(text="       Maximum compositing speed and least memory consumption.")
+        elif settings.quality == 'EXTRA':
+            quality.label(text="Denoise related render passes in groups.", icon='INFO')
+            quality.label(text="       Moderate compositing speed and increased memory consumption.")
+        elif settings.quality == 'HIGH':
+            quality.label(text="Denoise each render pass separately.", icon='INFO')
+            quality.label(text="       Slowest compositing speed and greatly increased memory consumption.")
         layout.separator()
 
-        Quality = layout.row()
-        Quality.prop(settings, "quality")
+        passes = layout.column(align=True)
+        passes.label(text="Render passes:")
+        passes.prop(settings, "use_emission", text="Use Emission Pass")
+        passes.prop(settings, "use_environment", text="Use Environment Pass")
+        passes.prop(settings, "use_transmission", text="Use Transmission Pass")
+        passes.prop(settings, "use_volumetric", text="Use Volumetric Pass")
         layout.separator()
-        
-        use_diff = layout.row(align=True)
-        use_diff.prop(settings, "use_diffuse", text="Use Diffuse Pass")
-        
-        use_glos = layout.row(align=True)
-        use_glos.prop(settings, "use_glossyness", text="Use Glossy Pass")
-        
-        use_emit = layout.row(align=True)
-        use_emit.prop(settings, "use_emission", text="Use Emision Pass")
-        
-        use_tran = layout.row(align=True)
-        use_tran.prop(settings, "use_transmission", text="Use Transmission Pass")
-        
-        use_volume = layout.row(align=True)
-        use_volume.prop(settings, "use_volumetric", text="Use Volumetric Pass")
-        
-        
-        Button = layout.row()
-        Button.operator("object.superimagedenoise")
+
+        layout.operator("object.superimagedenoise", icon='SHADERFX')
 
 
 
