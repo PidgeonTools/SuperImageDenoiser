@@ -75,6 +75,7 @@ class SID_Create(Operator):
             print('Just standard, basic, default, boring, normal quality.')
 
         # Initialise important settings
+        scene.render.engine = 'CYCLES'
         scene.use_nodes = True
         RenderLayer = 0
         
@@ -88,13 +89,6 @@ class SID_Create(Operator):
             ntree.nodes.remove(node)
             
 
-        
-        ###Enable Passes###
-
-        #Always on
-        bpy.context.view_layer.cycles.denoising_store_passes = True
-    
-        #Turn-off-able
         
         #SID
         SID_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
@@ -125,9 +119,6 @@ class SID_Create(Operator):
         SID_tree.inputs.new("NodeSocketColor", "DiffDir")
         SID_tree.inputs.new("NodeSocketColor", "DiffInd")
         SID_tree.inputs.new("NodeSocketColor", "DiffCol")
-        bpvl.use_pass_diffuse_direct = True
-        bpvl.use_pass_diffuse_indirect = True
-        bpvl.use_pass_diffuse_color = True
         DifDir = SID_tree.nodes.new(type="CompositorNodeDenoise")
         DifDir.location = 0, 1400
         DifIdr = SID_tree.nodes.new(type="CompositorNodeDenoise")
@@ -160,9 +151,6 @@ class SID_Create(Operator):
         SID_tree.inputs.new("NodeSocketColor", "GlossDir")
         SID_tree.inputs.new("NodeSocketColor", "GlossInd")
         SID_tree.inputs.new("NodeSocketColor", "GlossCol")
-        bpvl.use_pass_glossy_direct = True
-        bpvl.use_pass_glossy_indirect = True
-        bpvl.use_pass_glossy_color = True
         GlsDir = SID_tree.nodes.new(type="CompositorNodeDenoise")
         GlsDir.location = 0, 1000
         GlsIdr = SID_tree.nodes.new(type="CompositorNodeDenoise")
@@ -193,9 +181,6 @@ class SID_Create(Operator):
         SID_tree.inputs.new("NodeSocketColor", "TransDir")
         SID_tree.inputs.new("NodeSocketColor", "TransInd")
         SID_tree.inputs.new("NodeSocketColor", "TransCol")
-        bpvl.use_pass_transmission_direct = True
-        bpvl.use_pass_transmission_indirect = True
-        bpvl.use_pass_transmission_color = True
         TrnDir = SID_tree.nodes.new(type="CompositorNodeDenoise")
         TrnDir.location = 0, 600
         TrnIdr = SID_tree.nodes.new(type="CompositorNodeDenoise")
@@ -223,11 +208,8 @@ class SID_Create(Operator):
         SID_tree.links.new(input_node.outputs['TransCol'], TrnMul.inputs[2])
             
                 ##VOLUMES##
-        #enable passes
         SID_tree.inputs.new("NodeSocketColor", "VolumeDir")
         SID_tree.inputs.new("NodeSocketColor", "VolumeInd")
-        bpy.context.view_layer.cycles.use_pass_volume_direct = True
-        bpy.context.view_layer.cycles.use_pass_volume_indirect = True
     
         #create nodes
         VolDir = SID_tree.nodes.new(type="CompositorNodeDenoise")
@@ -275,8 +257,6 @@ class SID_Create(Operator):
         FinalDN = SID_tree.nodes.new(type="CompositorNodeDenoise")
         FinalDN.location = 1600, 1400  
         
-        bpvl.use_pass_emit = True
-        bpvl.use_pass_environment = True
         SID_tree.inputs.new("NodeSocketColor", "Emit")
         SID_tree.inputs.new("NodeSocketColor", "Env")
         
@@ -319,11 +299,12 @@ class SID_Create(Operator):
         SID_tree.links.new(FinalDN.outputs[0],Seperate.inputs[0])
 
         ViewLayerDisplace = 0
-        for x in bpy.context.scene.view_layers:
+        for view_layer in scene.view_layers:
             
             #Create Basic Nodes
             RenLayers_node = ntree.nodes.new(type='CompositorNodeRLayers')
             RenLayers_node.location = -100, ViewLayerDisplace
+            RenLayers_node.layer = view_layer.name
             Composite_node = ntree.nodes.new(type='CompositorNodeComposite')
             Composite_node.location = 400, ViewLayerDisplace
             
@@ -331,9 +312,34 @@ class SID_Create(Operator):
             SID_node.node_tree = SID_tree
             SID_node.location = 200, ViewLayerDisplace
             SID_node.name = "sid_node"
-            
+
+
+            # Prepare View Layer
+
+            ###Enable Passes###
+            view_layer.cycles.denoising_store_passes = True
+            # Diffuse
+            view_layer.use_pass_diffuse_direct = True
+            view_layer.use_pass_diffuse_indirect = True
+            view_layer.use_pass_diffuse_color = True
+            # Glossy
+            view_layer.use_pass_glossy_direct = True
+            view_layer.use_pass_glossy_indirect = True
+            view_layer.use_pass_glossy_color = True
+            # Transmission
+            view_layer.use_pass_transmission_direct = True
+            view_layer.use_pass_transmission_indirect = True
+            view_layer.use_pass_transmission_color = True
+            # Volume
+            view_layer.cycles.use_pass_volume_direct = True
+            view_layer.cycles.use_pass_volume_indirect = True
+            # Emission & Environment
+            view_layer.use_pass_emit = True
+            view_layer.use_pass_environment = True
+
+
             ViewLayerDisplace -= 1000
-            
+
             ntree.links.new(
                 RenLayers_node.outputs["DiffDir"],
                 SID_node.inputs["DiffDir"]
@@ -440,6 +446,14 @@ class SID_PT_Panel(Panel):
 
         Headline = layout.row()
         Headline.label(text="Click to activate SID", icon='SHADERFX')
+
+        if bpy.context.scene.render.engine != 'CYCLES':
+            CyclesWarn = layout.row()
+            CyclesWarn.label(text="Intel Denoiser (OIDN) render passes require Cycles", icon='ERROR')
+            CyclesEnable = layout.row()
+            CyclesEnable.label(text="       The Render Engine will be switched to Cycles", icon='NONE')
+            layout.separator()
+
 
         if bpy.context.scene.use_nodes == True:
             Warn = layout.row()
