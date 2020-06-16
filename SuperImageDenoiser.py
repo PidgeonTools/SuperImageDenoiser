@@ -18,10 +18,10 @@ class SID_Settings(PropertyGroup):
         name="Quality / Compositing speed",
         items=(
             ('STANDARD', 'Standard quality / Fastest compositing', "Standard denoiser quality (fast compositing time, uses least memory)"),
-            ('EXTRA', 'Better quality / Slow compositing', "Extra denoiser quality (moderate compositing time, uses a little more memory)"),
-            ('HIGH', 'Highest quality / Slower compositing', "Highest denoiser quality (slower compositing time, uses significantly more memory)"),
+            ('HIGH', 'Better quality / Slow compositing', "Extra denoiser quality (moderate compositing time, uses a little more memory)"),
+            ('SUPER', 'Highest quality / Slower compositing', "Highest denoiser quality (slower compositing time, uses significantly more memory)"),
         ),
-        default='HIGH',
+        default='SUPER',
         description="Choose the quality of the final denoised image. Affects memory usage and speed for compositing."
     )
 
@@ -50,7 +50,7 @@ class SID_Settings(PropertyGroup):
         )
 
 
-def create_sid_denoiser_high():
+def create_sid_denoiser_super():
     # Create dual denoiser node group
     SID_denoiser_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".Denoiser.HQ")
     SID_denoiser_input_node = SID_denoiser_tree.nodes.new("NodeGroupInput")
@@ -153,9 +153,9 @@ class SID_Create(Operator):
         scene = context.scene
         settings = scene.sid_settings
 
-        if settings.quality == 'HIGH':
+        if settings.quality == 'SUPER':
             print('Whoa, super-fancy high quality!')
-        elif settings.quality == 'EXTRA':
+        elif settings.quality == 'HIGH':
             print('OK, a little bit extra quality, but don\'t go overboard...')
         else: # STANDARD
             print('Just standard, basic, default, boring, normal quality.')
@@ -194,8 +194,8 @@ class SID_Create(Operator):
 
         # Create dual denoiser node group
         # TODO: if we want to create all three groups at once, remove the IF and use 2 names
-        if settings.quality == 'HIGH':
-            SID_denoiser_tree = create_sid_denoiser_high()
+        if settings.quality == 'SUPER':
+            SID_denoiser_tree = create_sid_denoiser_super()
         else:
             SID_denoiser_tree = create_sid_denoiser_mid()
 
@@ -530,10 +530,10 @@ class SID_PT_Panel(Panel):
         if settings.quality == 'STANDARD':
             quality.label(text="Denoise the whole image in a single pass.", icon='INFO')
             quality.label(text="       Maximum compositing speed and least memory consumption.")
-        elif settings.quality == 'EXTRA':
+        elif settings.quality == 'HIGH':
             quality.label(text="Denoise related render passes in groups.", icon='INFO')
             quality.label(text="       Moderate compositing speed and increased memory consumption.")
-        elif settings.quality == 'HIGH':
+        elif settings.quality == 'SUPER':
             quality.label(text="Denoise each render pass separately.", icon='INFO')
             quality.label(text="       Slowest compositing speed and greatly increased memory consumption.")
         layout.separator()
