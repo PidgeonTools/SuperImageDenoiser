@@ -189,7 +189,7 @@ def create_sid_denoiser_standard():
 
 
 
-def create_sid_super_denoiser_group(sid_denoiser_tree, context):
+def create_sid_super_denoiser_group(sid_denoiser_tree):
     # Creates a super denoiser node group using the provided subgroup
 
     SID_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
@@ -309,30 +309,18 @@ def create_sid_super_denoiser_group(sid_denoiser_tree, context):
     Combine = SID_tree.nodes.new(type="CompositorNodeCombRGBA")
     Combine.location = (1600, 100)
 
-    scene = context.scene
-    settings = scene.sid_settings
-    
     # Link nodes
     SID_tree.links.new(diffuse_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[1])
 
     SID_tree.links.new(glossy_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[2])
     SID_tree.links.new(add_diffuse_glossy.outputs[0], add_trans.inputs[1])
-    
-    if settings.use_transmission:
-        SID_tree.links.new(transmission_denoiser_node.outputs['Denoised Image'], add_trans.inputs[2])   
-        SID_tree.links.new(add_trans.outputs[0], add_volume.inputs[1])
-        
-    if settings.use_volumetric:
-        SID_tree.links.new(volume_denoiser_node.outputs['Denoised Image'], add_volume.inputs[2])
-        SID_tree.links.new(add_volume.outputs[0], add_emission.inputs[1])
-        
-    if settings.use_emission:
-        SID_tree.links.new(input_node.outputs['Emit'], add_emission.inputs[2])
-        
-    if settings.use_envrionment:
-        SID_tree.links.new(add_emission.outputs[0], add_environment.inputs[1])
-        SID_tree.links.new(input_node.outputs['Env'], add_environment.inputs[2])
-        
+    SID_tree.links.new(transmission_denoiser_node.outputs['Denoised Image'], add_trans.inputs[2])   
+    SID_tree.links.new(add_trans.outputs[0], add_volume.inputs[1])
+    SID_tree.links.new(volume_denoiser_node.outputs['Denoised Image'], add_volume.inputs[2])
+    SID_tree.links.new(add_volume.outputs[0], add_emission.inputs[1])
+    SID_tree.links.new(input_node.outputs['Emit'], add_emission.inputs[2])
+    SID_tree.links.new(add_emission.outputs[0], add_environment.inputs[1])
+    SID_tree.links.new(input_node.outputs['Env'], add_environment.inputs[2])
     SID_tree.links.new(add_environment.outputs[0], final_dn.inputs[0])
     SID_tree.links.new(input_node.outputs['Denoising Normal'], final_dn.inputs[1])
     SID_tree.links.new(input_node.outputs['Denoising Albedo'], final_dn.inputs[2])
