@@ -309,6 +309,9 @@ def create_sid_super_denoiser_group(sid_denoiser_tree):
     Combine = SID_tree.nodes.new(type="CompositorNodeCombRGBA")
     Combine.location = (1600, 100)
 
+    
+    settings = scene.sid_settings
+    
     # Link nodes
     SID_tree.links.new(diffuse_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[1])
 
