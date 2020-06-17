@@ -310,12 +310,10 @@ def create_sid_super_denoiser_group(sid_denoiser_tree):
     Combine.location = (1600, 100)
 
     # Link nodes
-    if settings.use_diffuse:
-        SID_tree.links.new(diffuse_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[1])
-        
-    if settings.use_glossyness:
-        SID_tree.links.new(glossy_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[2])
-        SID_tree.links.new(add_diffuse_glossy.outputs[0], add_trans.inputs[1])
+    SID_tree.links.new(diffuse_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[1])
+
+    SID_tree.links.new(glossy_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[2])
+    SID_tree.links.new(add_diffuse_glossy.outputs[0], add_trans.inputs[1])
     
     if settings.use_transmission:
         SID_tree.links.new(transmission_denoiser_node.outputs['Denoised Image'], add_trans.inputs[2])   
