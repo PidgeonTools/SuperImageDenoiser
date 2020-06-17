@@ -522,107 +522,39 @@ class SID_Create(Operator):
 
             ViewLayerDisplace -= 1000
 
-            ntree.links.new(
-                RenLayers_node.outputs["DiffDir"],
-                SID_node.inputs["DiffDir"]
-                )
-
-            ntree.links.new(
-                RenLayers_node.outputs["DiffInd"],
-                SID_node.inputs["DiffInd"]
-                )
-
-            ntree.links.new(
-                RenLayers_node.outputs["DiffCol"],
-                SID_node.inputs["DiffCol"]
-                )
-
-            ntree.links.new(
-                RenLayers_node.outputs["GlossDir"],
-                SID_node.inputs["GlossDir"]
-                )
-
-            ntree.links.new(
-                RenLayers_node.outputs["GlossInd"],
-                SID_node.inputs["GlossInd"]
-                )
-
-            ntree.links.new(
-                RenLayers_node.outputs["GlossCol"],
-                SID_node.inputs["GlossCol"]
-                )
+            ntree.links.new(RenLayers_node.outputs["DiffDir"],SID_node.inputs["DiffDir"])
+            ntree.links.new(RenLayers_node.outputs["DiffInd"],SID_node.inputs["DiffInd"])
+            ntree.links.new(RenLayers_node.outputs["DiffCol"],SID_node.inputs["DiffCol"])
+            ntree.links.new(RenLayers_node.outputs["GlossDir"],SID_node.inputs["GlossDir"])
+            ntree.links.new(RenLayers_node.outputs["GlossInd"],SID_node.inputs["GlossInd"])
+            ntree.links.new(RenLayers_node.outputs["GlossCol"],SID_node.inputs["GlossCol"])
 
             if settings.use_transmission:
-                ntree.links.new(
-                    RenLayers_node.outputs["TransDir"],
-                    SID_node.inputs["TransDir"]
-                    )
-
-                ntree.links.new(
-                    RenLayers_node.outputs["TransInd"],
-                    SID_node.inputs["TransInd"]
-                    )
-
-                ntree.links.new(
-                    RenLayers_node.outputs["TransCol"],
-                    SID_node.inputs["TransCol"]
-                    )
+                ntree.links.new(RenLayers_node.outputs["TransDir"],SID_node.inputs["TransDir"])
+                ntree.links.new(RenLayers_node.outputs["TransInd"],SID_node.inputs["TransInd"])
+                ntree.links.new(RenLayers_node.outputs["TransCol"],SID_node.inputs["TransCol"])
 
             if settings.use_volumetric:
-                ntree.links.new(
-                    RenLayers_node.outputs["VolumeDir"],
-                    SID_node.inputs["VolumeDir"]
-                    )
-
-                ntree.links.new(
-                    RenLayers_node.outputs["VolumeInd"],
-                    SID_node.inputs["VolumeInd"]
-                    )
+                ntree.links.new(RenLayers_node.outputs["VolumeDir"],SID_node.inputs["VolumeDir"])
+                ntree.links.new(RenLayers_node.outputs["VolumeInd"],SID_node.inputs["VolumeInd"])
 
             if settings.use_emission:
-                ntree.links.new(
-                    RenLayers_node.outputs["Emit"],
-                    SID_node.inputs["Emit"]
-                    )
+                ntree.links.new(RenLayers_node.outputs["Emit"],SID_node.inputs["Emit"])
 
             if settings.use_environment:
-                ntree.links.new(
-                    RenLayers_node.outputs["Env"],
-                    SID_node.inputs["Env"]
-                    )
+                ntree.links.new(RenLayers_node.outputs["Env"],SID_node.inputs["Env"])
 
-            ntree.links.new(
-                RenLayers_node.outputs["Alpha"],
-                SID_node.inputs["Alpha"]
-                )
-
-            ntree.links.new(
-                RenLayers_node.outputs["Noisy Image"],
-                SID_node.inputs["Noisy Image"]
-                )
-
-            ntree.links.new(
-                RenLayers_node.outputs["Denoising Albedo"],
-                SID_node.inputs["Denoising Albedo"]
-                )
-
-            ntree.links.new(
-                RenLayers_node.outputs["Denoising Normal"],
-                SID_node.inputs["Denoising Normal"]
-                )
+            ntree.links.new(RenLayers_node.outputs["Alpha"],SID_node.inputs["Alpha"])
+            ntree.links.new(RenLayers_node.outputs["Noisy Image"],SID_node.inputs["Noisy Image"])
+            ntree.links.new(RenLayers_node.outputs["Denoising Albedo"],SID_node.inputs["Denoising Albedo"])
+            ntree.links.new(RenLayers_node.outputs["Denoising Normal"],SID_node.inputs["Denoising Normal"])
 
             if settings.quality == 'SUPER':
-                ntree.links.new(SID_node.outputs["SUPER Quality"],
-                    Composite_node.inputs["Image"]
-                    )
+                ntree.links.new(SID_node.outputs["SUPER Quality"],Composite_node.inputs["Image"])
             elif settings.quality == 'HIGH':
-                ntree.links.new(SID_node.outputs["High Quality"],
-                    Composite_node.inputs["Image"]
-                    )
+                ntree.links.new(SID_node.outputs["High Quality"],Composite_node.inputs["Image"])
             else:
-                ntree.links.new(SID_node.outputs["Standard Quality"],
-                    Composite_node.inputs["Image"]
-                    )
+                ntree.links.new(SID_node.outputs["Standard Quality"],Composite_node.inputs["Image"])
 
         return {'FINISHED'}
 
