@@ -189,7 +189,7 @@ def create_sid_denoiser_standard():
 
 
 
-def create_sid_super_denoiser_group(sid_denoiser_tree):
+def create_sid_super_denoiser_group(sid_denoiser_tree, context):
     # Creates a super denoiser node group using the provided subgroup
 
     SID_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
