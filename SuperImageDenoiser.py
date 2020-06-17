@@ -17,9 +17,9 @@ class SID_Settings(PropertyGroup):
     quality: EnumProperty(
         name="Quality / Compositing speed",
         items=(
-            ('STANDARD', 'Standard quality / Fastest compositing', "Standard denoiser quality (fast compositing time, uses least memory)"),
-            ('HIGH', 'Better quality / Slow compositing', "Extra denoiser quality (moderate compositing time, uses a little more memory)"),
-            ('SUPER', 'Highest quality / Slower compositing', "Highest denoiser quality (slower compositing time, uses significantly more memory)"),
+            ('STANDARD', 'Standard', "Standard denoiser quality (fast compositing time, uses least memory)"),
+            ('HIGH', 'High', "Extra denoiser quality (moderate compositing time, uses a little more memory)"),
+            ('SUPER', 'Super', "Highest denoiser quality (slower compositing time, uses significantly more memory)"),
         ),
         default='SUPER',
         description="Choose the quality of the final denoised image. Affects memory usage and speed for compositing."
@@ -310,16 +310,28 @@ def create_sid_super_denoiser_group(sid_denoiser_tree):
     Combine.location = (1600, 100)
 
     # Link nodes
-    SID_tree.links.new(diffuse_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[1])
-    SID_tree.links.new(glossy_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[2])
-    SID_tree.links.new(add_diffuse_glossy.outputs[0], add_trans.inputs[1])
-    SID_tree.links.new(transmission_denoiser_node.outputs['Denoised Image'], add_trans.inputs[2])
-    SID_tree.links.new(add_trans.outputs[0], add_volume.inputs[1])
-    SID_tree.links.new(volume_denoiser_node.outputs['Denoised Image'], add_volume.inputs[2])
-    SID_tree.links.new(add_volume.outputs[0], add_emission.inputs[1])
-    SID_tree.links.new(input_node.outputs['Emit'], add_emission.inputs[2])
-    SID_tree.links.new(add_emission.outputs[0], add_environment.inputs[1])
-    SID_tree.links.new(input_node.outputs['Env'], add_environment.inputs[2])
+    if settings.use_diffuse:
+        SID_tree.links.new(diffuse_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[1])
+        
+    if settings.use_glossyness:
+        SID_tree.links.new(glossy_denoiser_node.outputs['Denoised Image'], add_diffuse_glossy.inputs[2])
+        SID_tree.links.new(add_diffuse_glossy.outputs[0], add_trans.inputs[1])
+    
+    if settings.use_transmission:
+        SID_tree.links.new(transmission_denoiser_node.outputs['Denoised Image'], add_trans.inputs[2])   
+        SID_tree.links.new(add_trans.outputs[0], add_volume.inputs[1])
+        
+    if settings.use_volumetric:
+        SID_tree.links.new(volume_denoiser_node.outputs['Denoised Image'], add_volume.inputs[2])
+        SID_tree.links.new(add_volume.outputs[0], add_emission.inputs[1])
+        
+    if settings.use_emission:
+        SID_tree.links.new(input_node.outputs['Emit'], add_emission.inputs[2])
+        
+    if settings.use_envrionment:
+        SID_tree.links.new(add_emission.outputs[0], add_environment.inputs[1])
+        SID_tree.links.new(input_node.outputs['Env'], add_environment.inputs[2])
+        
     SID_tree.links.new(add_environment.outputs[0], final_dn.inputs[0])
     SID_tree.links.new(input_node.outputs['Denoising Normal'], final_dn.inputs[1])
     SID_tree.links.new(input_node.outputs['Denoising Albedo'], final_dn.inputs[2])
