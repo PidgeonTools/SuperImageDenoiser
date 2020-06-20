@@ -15,7 +15,7 @@ from bpy.props import (
 
 class SID_Settings(PropertyGroup):
     quality: EnumProperty(
-        name="Quality / Compositing speed",
+        name="Denoiser Quality",
         items=(
             ('STANDARD', 'Standard', "Standard denoiser quality (fast compositing time, uses least memory)"),
             ('HIGH', 'High', "Extra denoiser quality (moderate compositing time, uses a little more memory)"),
@@ -300,6 +300,9 @@ def create_sid_super_denoiser_group(sid_denoiser_tree):
 
     final_dn = SID_tree.nodes.new(type="CompositorNodeDenoise")
     final_dn.location = (1200, 100)
+    
+    alpha_dn = SID_tree.nodes.new(type="CompositorNodeDenoise")
+    alpha_dn.location = (1200, -100)
 
     SID_tree.inputs.new("NodeSocketColor", "Emit")
     SID_tree.inputs.new("NodeSocketColor", "Env")
@@ -324,6 +327,9 @@ def create_sid_super_denoiser_group(sid_denoiser_tree):
     SID_tree.links.new(add_environment.outputs[0], final_dn.inputs[0])
     SID_tree.links.new(input_node.outputs['Denoising Normal'], final_dn.inputs[1])
     SID_tree.links.new(input_node.outputs['Denoising Albedo'], final_dn.inputs[2])
+    SID_tree.links.new(input_node.outputs['Alpha'], alpha_dn.inputs[0])
+    SID_tree.links.new(input_node.outputs['Denoising Normal'], alpha_dn.inputs[1])
+    SID_tree.links.new(input_node.outputs['Denoising Albedo'], alpha_dn.inputs[2])
 
     SID_tree.outputs.new("NodeSocketColor", "Denoised Image")
     SID_tree.outputs.new("NodeSocketColor", "Denoised Diffuse")
@@ -339,7 +345,7 @@ def create_sid_super_denoiser_group(sid_denoiser_tree):
     SID_tree.links.new(Seperate.outputs["R"], Combine.inputs["R"])
     SID_tree.links.new(Seperate.outputs["G"], Combine.inputs["G"])
     SID_tree.links.new(Seperate.outputs["B"], Combine.inputs["B"])
-    SID_tree.links.new(input_node.outputs["Alpha"], Combine.inputs["A"])
+    SID_tree.links.new(alpha_dn.outputs[0], Combine.inputs["A"])
     SID_tree.links.new(final_dn.outputs[0], Seperate.inputs[0])
 
     return SID_tree
@@ -638,3 +644,6 @@ def unregister():
 
     for cls in reversed(classes):
         unregister_class(cls)
+
+if __name__ == "__main__":
+    register()
