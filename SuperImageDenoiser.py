@@ -48,6 +48,12 @@ class SID_Settings(PropertyGroup):
         default=False,
         description="Enable this if you have Volumetric materials in your scene"
         )
+        
+    compositor_reset: BoolProperty(
+        name="CompositorReset",
+        default=False,
+        description="Resets the compositor when enabeling SID"
+        )
 
 
 def create_sid_denoiser_super():
@@ -451,9 +457,9 @@ class SID_Create(Operator):
         #Clear Compositor
         ntree = scene.node_tree
 
-        
-        #for node in ntree.nodes:
-        #    ntree.nodes.remove(node)
+        if settings.compositor_reset:
+            for node in ntree.nodes:
+                ntree.nodes.remove(node)
 
 
 
@@ -573,13 +579,6 @@ class SID_PT_Panel(Panel):
             cycles_warning.label(text="       The Render Engine will be switched to Cycles.")
             layout.separator()
 
-        if bpy.context.scene.use_nodes == True:
-            compositor_warn = layout.column(align=True)
-            compositor_warn.label(text="Compositor nodes detected!", icon='ERROR')
-            compositor_warn.label(text="       Using Super Image Denoiser will delete all compositor nodes!")
-            compositor_warn.label(text="       Ignore if you just added Super Image Denoiser.")
-            layout.separator()
-
         quality = layout.column(align=True)
         quality.prop(settings, "quality", text="Quality")
         if settings.quality == 'STANDARD':
@@ -592,6 +591,8 @@ class SID_PT_Panel(Panel):
             quality.label(text="Denoise each render pass separately.", icon='INFO')
             quality.label(text="       Slowest compositing speed and greatly increased memory consumption.")
         layout.separator()
+        
+
 
         passes = layout.column(align=True)
         passes.label(text="Render passes:")
@@ -600,7 +601,20 @@ class SID_PT_Panel(Panel):
         passes.prop(settings, "use_transmission", text="Use Transmission Pass")
         passes.prop(settings, "use_volumetric", text="Use Volumetric Pass")
         layout.separator()
-
+        
+        advanced = layout.column(align=True)
+        advanced.prop(text="Advanced")
+        
+        resetCompositor.prop(settings, "compositor_reset", text="reset compositor before adding SID?")
+            
+        if settings.compositor_reset:
+            if bpy.context.scene.use_nodes == True:
+                compositor_warn = layout.column(align=True)
+                compositor_warn.label(text="Compositor nodes detected!", icon='ERROR')
+                compositor_warn.label(text="       Using Super Image Denoiser will delete all compositor nodes!")
+                compositor_warn.label(text="       Ignore if you just added Super Image Denoiser.")
+                layout.separator()
+        
         layout.operator("object.superimagedenoise", icon='SHADERFX')
 
 
