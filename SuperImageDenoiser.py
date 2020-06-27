@@ -172,7 +172,6 @@ def create_sid_denoiser_standard():
     SID_tree.links.new(input_node.outputs['Denoising Albedo'], standard_dn.inputs[2])
 
     SID_tree.outputs.new("NodeSocketColor", "Denoised Image")
-    SID_tree.outputs.new("NodeSocketColor", "Standard Denoiser")
 
     SID_tree.links.new(standard_dn.outputs[0], output_node.inputs["Denoised Image"])
 
@@ -603,9 +602,8 @@ class SID_PT_Panel(Panel):
         layout.separator()
         
         advanced = layout.column(align=True)
-        advanced.prop(text="Advanced")
-        
-        resetCompositor.prop(settings, "compositor_reset", text="reset compositor before adding SID?")
+        advanced.label(text="Advanced:")
+        advanced.prop(settings, "compositor_reset", text="reset compositor before adding SID?")
             
         if settings.compositor_reset:
             if bpy.context.scene.use_nodes == True:
