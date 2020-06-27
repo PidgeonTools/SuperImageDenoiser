@@ -393,7 +393,6 @@ def create_sid_super_group(standard_denoiser_tree, high_denoiser_tree, super_den
         "Noisy Image",
         "Denoising Normal",
         "Denoising Albedo",
-        "Alpha",
     ]
     for input in input_sockets:
         SID_super_group.links.new(input_node.outputs[input], standard_denoiser_node.inputs[input])
