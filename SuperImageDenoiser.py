@@ -451,8 +451,9 @@ class SID_Create(Operator):
         #Clear Compositor
         ntree = scene.node_tree
 
-        for node in ntree.nodes:
-            ntree.nodes.remove(node)
+        
+        #for node in ntree.nodes:
+        #    ntree.nodes.remove(node)
 
 
 
