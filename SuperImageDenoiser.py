@@ -155,20 +155,11 @@ def create_sid_denoiser_standard():
     SID_tree.inputs.new("NodeSocketColor", "Noisy Image")
     SID_tree.inputs.new("NodeSocketVector", "Denoising Normal")
     SID_tree.inputs.new("NodeSocketColor", "Denoising Albedo")
-    SID_tree.inputs.new("NodeSocketColor", "Alpha")
-
 
     # Standard Denoiser
     standard_dn = SID_tree.nodes.new(type="CompositorNodeDenoise")
     standard_dn.location = (0, 100)
-
-
-    ##ADD IT ALL TOGETHER##
-    Seperate = SID_tree.nodes.new(type="CompositorNodeSepRGBA")
-    Seperate.location = (400, 100)
-    Combine = SID_tree.nodes.new(type="CompositorNodeCombRGBA")
-    Combine.location = (600, 100)
-
+    
     # Link nodes
     SID_tree.links.new(input_node.outputs['Noisy Image'], standard_dn.inputs[0])
     SID_tree.links.new(input_node.outputs['Denoising Normal'], standard_dn.inputs[1])
@@ -177,13 +168,7 @@ def create_sid_denoiser_standard():
     SID_tree.outputs.new("NodeSocketColor", "Denoised Image")
     SID_tree.outputs.new("NodeSocketColor", "Standard Denoiser")
 
-    SID_tree.links.new(standard_dn.outputs[0], output_node.inputs["Standard Denoiser"])
-    SID_tree.links.new(standard_dn.outputs[0], Seperate.inputs[0])
-    SID_tree.links.new(Seperate.outputs["R"], Combine.inputs["R"])
-    SID_tree.links.new(Seperate.outputs["G"], Combine.inputs["G"])
-    SID_tree.links.new(Seperate.outputs["B"], Combine.inputs["B"])
-    SID_tree.links.new(input_node.outputs["Alpha"], Combine.inputs["A"])
-    SID_tree.links.new(Combine.outputs[0], output_node.inputs["Denoised Image"])
+    SID_tree.links.new(standard_dn.outputs[0], output_node.inputs["Denoised Image"])
 
     return SID_tree
 
