@@ -9,15 +9,7 @@ from bpy.props import (
     EnumProperty,
     PointerProperty,
 )
-
-from SID_Create_Group import create_sid_super_group
-from SID_QualityStandart import create_sid_denoiser_standard
-from SID_QualityHigh import create_sid_denoiser_high
-from SID_QualitySuper import create_sid_denoiser_super
-from SID_Settings import SID_Settings
-
-
-
+from . import SID_Settings
 
 def create_sid_super_denoiser_group(sid_denoiser_tree, settings: SID_Settings):
     # Creates a super denoiser node group using the provided subgroup

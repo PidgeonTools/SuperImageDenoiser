@@ -22,11 +22,41 @@ bl_info = {
     "wiki_url": "https://discord.gg/cnFdGQP",
     "category": "Compositor",
 }
+import bpy
+from bpy.props import (
+    PointerProperty,
+)
+from .SuperImageDenoiser import SID_Create
+from .SID_Create_DenoiserGroup import create_sid_super_denoiser_group
+from .SID_Create_Group import create_sid_super_group
+from .SID_QualityStandart import create_sid_denoiser_standard
+from .SID_QualityHigh import create_sid_denoiser_high
+from .SID_QualitySuper import create_sid_denoiser_super
+from .SID_Settings import SID_Settings
+from .SID_Panel import SID_PT_Panel
 
-from . import SuperImageDenoiser
+# Register classes
+classes = (
+    SID_Settings,
+    SID_PT_Panel,
+    SID_Create,
+)
 
 def register():
-    SuperImageDenoiser.register()
+    from bpy.utils import register_class
+
+    for cls in classes:
+        register_class(cls)
+
+    bpy.types.Scene.sid_settings = PointerProperty(type=SID_Settings)
 
 def unregister():
-    SuperImageDenoiser.unregister()
+    from bpy.utils import unregister_class
+
+    del bpy.types.Scene.sid_settings
+
+    for cls in reversed(classes):
+        unregister_class(cls)
+
+if __name__ == "__main__":
+    register()
