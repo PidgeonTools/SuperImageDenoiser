@@ -126,7 +126,9 @@ class SID_Create(Operator):
             else:
                 ntree.links.new(SID_node.outputs["Standard Quality"],Composite_node.inputs["Image"])
 
-        return {'FINISHED'}
+            #if settings.use_mlEXR:
+
+            return {'FINISHED'}
 
 
 

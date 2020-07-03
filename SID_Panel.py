@@ -67,6 +67,16 @@ class SID_PT_Panel(Panel):
                 compositor_warn.label(text="       Using Super Image Denoiser will delete all compositor nodes!")
                 compositor_warn.label(text="       Ignore if you just added Super Image Denoiser.")
                 layout.separator()
+
+        
+        advanced.prop(settings, "use_mlEXR", text="Use Multi-Layer EXR?")
+
+        if settings.use_mlEXR:
+            if settings.quality == "STANDARD":
+                compositor_warn = layout.column(align=True)
+                compositor_warn.label(text="ML-EXR is incompatible with Standard quality", icon='ERROR')
+                compositor_warn.label(text="       pick 'high' or 'SUPER' quality instead!")
+                layout.separator()
         
         layout.operator("object.superimagedenoise", icon='SHADERFX')
 
