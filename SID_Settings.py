@@ -1,5 +1,3 @@
-import bpy
-
 from bpy.types import (
     PropertyGroup,
 )
@@ -14,9 +12,26 @@ class SID_Settings(PropertyGroup):
     quality: EnumProperty(
         name="Denoiser Quality",
         items=(
-            ('STANDARD', 'Standard', "Standard denoiser quality (fast compositing time, uses least memory)"),
-            ('HIGH', 'High', "Extra denoiser quality (moderate compositing time, uses a little more memory)"),
-            ('SUPER', 'Super', "Highest denoiser quality (slower compositing time, uses significantly more memory)"),
+#            (
+#                'INTERNAL NAME'
+#                'external name'
+#                'fancy description'
+#            )
+            (
+                'STANDARD',
+                'Standard',
+                "Standard denoiser quality (fast compositing time, uses least memory)"
+            ),
+            (
+                'HIGH',
+                'High',
+                "Extra denoiser quality (moderate compositing time, uses a little more memory)"
+            ),
+            (
+                'SUPER',
+                'Super',
+                "Highest denoiser quality (slower compositing time, uses significantly more memory)"
+            ),
         ),
         default='SUPER',
         description="Choose the quality of the final denoised image. Affects memory usage and speed for compositing."
@@ -45,13 +60,13 @@ class SID_Settings(PropertyGroup):
         default=False,
         description="Enable this if you have Volumetric materials in your scene"
         )
-        
+
     compositor_reset: BoolProperty(
         name="CompositorReset",
         default=False,
         description="Resets the compositor when enabeling SID"
         )
-        
+
     use_mlEXR: BoolProperty(
         name="MultiLayerEXR",
         default=False,

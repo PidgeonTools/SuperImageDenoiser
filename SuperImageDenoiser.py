@@ -1,4 +1,3 @@
-import bpy
 from bpy.types import Operator
 
 
@@ -23,7 +22,6 @@ class SID_Create(Operator):
         # Initialise important settings
         scene.render.engine = 'CYCLES'
         scene.use_nodes = True
-        RenderLayer = 0
 
 
         #Clear Compositor
@@ -38,32 +36,41 @@ class SID_Create(Operator):
         #SID
 
         # Create dual denoiser node group
-        SID_standard_tree = create_sid_denoiser_standard()
-        SID_high_tree = create_sid_super_denoiser_group(create_sid_denoiser_high(), settings)
-        SID_super_tree = create_sid_super_denoiser_group(create_sid_denoiser_super(), settings)
+        sid_standard_tree = create_sid_denoiser_standard()
+        sid_high_tree = create_sid_super_denoiser_group(
+            create_sid_denoiser_high(),
+            settings
+            )
+        sid_super_tree = create_sid_super_denoiser_group(
+            create_sid_denoiser_super(),
+            settings
+            )
 
-        SID_super_group = create_sid_super_group(SID_standard_tree, SID_high_tree, SID_super_tree, settings)
+        sid_super_group = create_sid_super_group(
+            sid_standard_tree,
+            sid_high_tree,
+            sid_super_tree,
+            settings
+            )
 
 
 
         # Create a denoiser for each View Layer
-        ViewLayerDisplace = 0
+        viewlayer_displace = 0
         for view_layer in scene.view_layers:
 
             if not view_layer.use:
                 continue
 
             #Create Basic Nodes
-            RenLayers_node = ntree.nodes.new(type='CompositorNodeRLayers')
-            RenLayers_node.location = (-100, ViewLayerDisplace)
-            RenLayers_node.layer = view_layer.name
-            Composite_node = ntree.nodes.new(type='CompositorNodeComposite')
-            Composite_node.location = (400, ViewLayerDisplace)
+            renlayers_node = ntree.nodes.new(type='CompositorNodeRLayers')
+            renlayers_node.location = (-100, viewlayer_displace)
+            renlayers_node.layer = view_layer.name
 
-            SID_node = scene.node_tree.nodes.new("CompositorNodeGroup")
-            SID_node.node_tree = SID_super_group
-            SID_node.location = (200, ViewLayerDisplace)
-            SID_node.name = "sid_node"
+            sid_node = scene.node_tree.nodes.new("CompositorNodeGroup")
+            sid_node.node_tree = sid_super_group
+            sid_node.location = (200, viewlayer_displace)
+            sid_node.name = "sid_node"
 
 
             # Prepare View Layer
@@ -90,47 +97,161 @@ class SID_Create(Operator):
             view_layer.use_pass_environment = settings.use_environment
 
 
-            ViewLayerDisplace -= 1000
 
-            ntree.links.new(RenLayers_node.outputs["DiffDir"],SID_node.inputs["DiffDir"])
-            ntree.links.new(RenLayers_node.outputs["DiffInd"],SID_node.inputs["DiffInd"])
-            ntree.links.new(RenLayers_node.outputs["DiffCol"],SID_node.inputs["DiffCol"])
-            ntree.links.new(RenLayers_node.outputs["GlossDir"],SID_node.inputs["GlossDir"])
-            ntree.links.new(RenLayers_node.outputs["GlossInd"],SID_node.inputs["GlossInd"])
-            ntree.links.new(RenLayers_node.outputs["GlossCol"],SID_node.inputs["GlossCol"])
+            ntree.links.new(
+                renlayers_node.outputs["DiffDir"],
+                sid_node.inputs["DiffDir"]
+                )
+            ntree.links.new(
+                renlayers_node.outputs["DiffInd"],
+                sid_node.inputs["DiffInd"]
+                )
+            ntree.links.new(
+                renlayers_node.outputs["DiffCol"],
+                sid_node.inputs["DiffCol"]
+                )
+            ntree.links.new(
+                renlayers_node.outputs["GlossDir"],
+                sid_node.inputs["GlossDir"]
+                )
+            ntree.links.new(
+                renlayers_node.outputs["GlossInd"],
+                sid_node.inputs["GlossInd"]
+                )
+            ntree.links.new(
+                renlayers_node.outputs["GlossCol"],
+                sid_node.inputs["GlossCol"]
+                )
 
             if settings.use_transmission:
-                ntree.links.new(RenLayers_node.outputs["TransDir"],SID_node.inputs["TransDir"])
-                ntree.links.new(RenLayers_node.outputs["TransInd"],SID_node.inputs["TransInd"])
-                ntree.links.new(RenLayers_node.outputs["TransCol"],SID_node.inputs["TransCol"])
+                ntree.links.new(
+                    renlayers_node.outputs["TransDir"],
+                    sid_node.inputs["TransDir"]
+                    )
+                ntree.links.new(
+                    renlayers_node.outputs["TransInd"],
+                    sid_node.inputs["TransInd"]
+                    )
+                ntree.links.new(
+                    renlayers_node.outputs["TransCol"],
+                    sid_node.inputs["TransCol"]
+                    )
 
             if settings.use_volumetric:
-                ntree.links.new(RenLayers_node.outputs["VolumeDir"],SID_node.inputs["VolumeDir"])
-                ntree.links.new(RenLayers_node.outputs["VolumeInd"],SID_node.inputs["VolumeInd"])
+                ntree.links.new(
+                    renlayers_node.outputs["VolumeDir"],
+                    sid_node.inputs["VolumeDir"]
+                    )
+                ntree.links.new(
+                    renlayers_node.outputs["VolumeInd"],
+                    sid_node.inputs["VolumeInd"]
+                    )
 
             if settings.use_emission:
-                ntree.links.new(RenLayers_node.outputs["Emit"],SID_node.inputs["Emit"])
+                ntree.links.new(
+                    renlayers_node.outputs["Emit"],
+                    sid_node.inputs["Emit"]
+                    )
 
             if settings.use_environment:
-                ntree.links.new(RenLayers_node.outputs["Env"],SID_node.inputs["Env"])
+                ntree.links.new(
+                    renlayers_node.outputs["Env"],
+                    sid_node.inputs["Env"]
+                    )
 
-            ntree.links.new(RenLayers_node.outputs["Alpha"],SID_node.inputs["Alpha"])
-            ntree.links.new(RenLayers_node.outputs["Noisy Image"],SID_node.inputs["Noisy Image"])
-            ntree.links.new(RenLayers_node.outputs["Denoising Albedo"],SID_node.inputs["Denoising Albedo"])
-            ntree.links.new(RenLayers_node.outputs["Denoising Normal"],SID_node.inputs["Denoising Normal"])
+            ntree.links.new(
+                renlayers_node.outputs["Alpha"],
+                sid_node.inputs["Alpha"]
+                )
+            ntree.links.new(
+                renlayers_node.outputs["Noisy Image"],
+                sid_node.inputs["Noisy Image"]
+                )
+            ntree.links.new(
+                renlayers_node.outputs["Denoising Albedo"],
+                sid_node.inputs["Denoising Albedo"]
+                )
+            ntree.links.new(
+                renlayers_node.outputs["Denoising Normal"],
+                sid_node.inputs["Denoising Normal"]
+                )
 
-            if settings.quality == 'SUPER':
-                ntree.links.new(SID_node.outputs["SUPER Quality"],Composite_node.inputs["Image"])
-            elif settings.quality == 'HIGH':
-                ntree.links.new(SID_node.outputs["High Quality"],Composite_node.inputs["Image"])
+
+            if settings.use_mlEXR:
+                output_file_node = ntree.nodes.new(type="CompositorNodeOutputFile")
+                output_file_node.location = (400, viewlayer_displace)
+                output_file_node.file_slots.new("Diffuse")
+
+                if settings.quality == 'SUPER':
+                    ntree.links.new(
+                        sid_node.outputs["SUPER Quality"],
+                        output_file_node.inputs["Image"]
+                        )
+                elif settings.quality == 'HIGH':
+                    ntree.links.new(
+                        sid_node.outputs["High Quality"],
+                        output_file_node.inputs["Image"]
+                        )
+
+                ntree.links.new(
+                    sid_node.outputs['DN Diffuse'],
+                    output_file_node.inputs['Diffuse']
+                    )
+
+                output_file_node.file_slots.new("Glossy")
+                ntree.links.new(
+                    sid_node.outputs['DN Glossy'],
+                    output_file_node.inputs['Glossy']
+                    )
+
+                if settings.use_transmission:
+                    output_file_node.file_slots.new("Transmission")
+                    ntree.links.new(
+                        sid_node.outputs['DN Transmission'],
+                        output_file_node.inputs['Transmission']
+                        )
+
+                if settings.use_volumetric:
+                    output_file_node.file_slots.new("Volume")
+                    ntree.links.new(
+                        sid_node.outputs['DN Volume'],
+                        output_file_node.inputs['Volume']
+                        )
+
+                if settings.use_emission:
+                    output_file_node.file_slots.new("Emission")
+                    ntree.links.new(
+                        sid_node.outputs['Emission'],
+                        output_file_node.inputs['Emission']
+                        )
+                if settings.use_environment:
+                    output_file_node.file_slots.new("Env")
+                    ntree.links.new(
+                        sid_node.outputs['Envrionment'],
+                        output_file_node.inputs['Env']
+                        )
+
+                output_file_node.format.file_format = 'OPEN_EXR_MULTILAYER'
+                #made me cry
             else:
-                ntree.links.new(SID_node.outputs["Standard Quality"],Composite_node.inputs["Image"])
+                composite_node = ntree.nodes.new(type='CompositorNodeComposite')
+                composite_node.location = (400, viewlayer_displace)
+                if settings.quality == 'SUPER':
+                    ntree.links.new(
+                        sid_node.outputs["SUPER Quality"],
+                        composite_node.inputs["Image"]
+                        )
+                elif settings.quality == 'HIGH':
+                    ntree.links.new(
+                        sid_node.outputs["High Quality"],
+                        composite_node.inputs["Image"]
+                        )
+                else:
+                    ntree.links.new(
+                        sid_node.outputs["Standard Quality"],
+                        composite_node.inputs["Image"]
+                        )
+            viewlayer_displace -= 1000
 
-            #if settings.use_mlEXR:
 
             return {'FINISHED'}
-
-
-
-
-
