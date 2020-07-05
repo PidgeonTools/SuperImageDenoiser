@@ -179,7 +179,7 @@ class SID_Create(Operator):
 
             if settings.use_mlEXR:
                 output_file_node = ntree.nodes.new(type="CompositorNodeOutputFile")
-                output_file_node.location = (400, viewlayer_displace)
+                output_file_node.location = (400, viewlayer_displace - 200)
                 output_file_node.file_slots.new("Diffuse")
 
                 if settings.quality == 'SUPER':
@@ -233,24 +233,23 @@ class SID_Create(Operator):
 
                 output_file_node.format.file_format = 'OPEN_EXR_MULTILAYER'
                 #made me cry
+            composite_node = ntree.nodes.new(type='CompositorNodeComposite')
+            composite_node.location = (400, viewlayer_displace)
+            if settings.quality == 'SUPER':
+                ntree.links.new(
+                    sid_node.outputs["SUPER Quality"],
+                    composite_node.inputs["Image"]
+                    )
+            elif settings.quality == 'HIGH':
+                ntree.links.new(
+                    sid_node.outputs["High Quality"],
+                    composite_node.inputs["Image"]
+                    )
             else:
-                composite_node = ntree.nodes.new(type='CompositorNodeComposite')
-                composite_node.location = (400, viewlayer_displace)
-                if settings.quality == 'SUPER':
-                    ntree.links.new(
-                        sid_node.outputs["SUPER Quality"],
-                        composite_node.inputs["Image"]
-                        )
-                elif settings.quality == 'HIGH':
-                    ntree.links.new(
-                        sid_node.outputs["High Quality"],
-                        composite_node.inputs["Image"]
-                        )
-                else:
-                    ntree.links.new(
-                        sid_node.outputs["Standard Quality"],
-                        composite_node.inputs["Image"]
-                        )
+                ntree.links.new(
+                    sid_node.outputs["Standard Quality"],
+                    composite_node.inputs["Image"]
+                    )
             viewlayer_displace -= 1000
 
 

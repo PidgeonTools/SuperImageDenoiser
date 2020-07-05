@@ -60,31 +60,32 @@ class SID_PT_Panel(Panel):
                 )
         layout.separator()
 
-        passes = layout.column(align=True)
-        passes.label(
-            text="Render passes:"
-            )
-        passes.prop(
-            settings,
-            "use_emission",
-            text="Use Emission Pass"
-            )
-        passes.prop(
-            settings,
-            "use_environment",
-            text="Use Environment Pass"
-            )
-        passes.prop(
-            settings,
-            "use_transmission",
-            text="Use Transmission Pass"
-            )
-        passes.prop(
-            settings,
-            "use_volumetric",
-            text="Use Volumetric Pass"
-            )
-        layout.separator()
+        if settings.quality != "STANDARD":
+            passes = layout.column(align=True)
+            passes.label(
+                text="Render passes:"
+                )
+            passes.prop(
+                settings,
+                "use_emission",
+                text="Use Emission Pass"
+                )
+            passes.prop(
+                settings,
+                "use_environment",
+                text="Use Environment Pass"
+                )
+            passes.prop(
+                settings,
+                "use_transmission",
+                text="Use Transmission Pass"
+                )
+            passes.prop(
+                settings,
+                "use_volumetric",
+                text="Use Volumetric Pass"
+                )
+            layout.separator()
 
         advanced = layout.column(align=True)
         advanced.label(
@@ -111,17 +112,9 @@ class SID_PT_Panel(Panel):
                 layout.separator()
 
 
-        advanced.prop(settings, "use_mlEXR", text="Use Multi-Layer EXR?")
 
-        if settings.use_mlEXR:
-            if settings.quality == "STANDARD":
-                compositor_warn = layout.column(align=True)
-                compositor_warn.label(
-                    text="ML-EXR is incompatible with Standard quality", icon='ERROR'
-                    )
-                compositor_warn.label(
-                    text="       pick 'high' or 'SUPER' quality instead!"
-                    )
-                layout.separator()
+        if settings.quality != "STANDARD":
+            advanced.prop(settings, "use_mlEXR", text="Use Multi-Layer EXR")
+            layout.separator()
 
         layout.operator("object.superimagedenoise", icon='SHADERFX')

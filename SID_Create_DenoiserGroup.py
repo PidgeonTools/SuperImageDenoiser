@@ -300,11 +300,6 @@ def create_sid_super_denoiser_group(sid_denoiser_tree, settings: SID_Settings):
                 input_node.outputs['Env'],
                 output_node.inputs["Envrionment"]
                 )
-
-        sid_tree.links.new(
-            combine_node.outputs[0],
-            output_node.inputs["Denoised Image"]
-            )
         sid_tree.links.new(
             diffuse_denoiser_node.outputs['Denoised Image'],
             output_node.inputs['Denoised Diffuse']
@@ -313,24 +308,29 @@ def create_sid_super_denoiser_group(sid_denoiser_tree, settings: SID_Settings):
             glossy_denoiser_node.outputs['Denoised Image'],
             output_node.inputs['Denoised Glossy']
             )
-        sid_tree.links.new(
-            seperate_node.outputs["R"],
-            combine_node.inputs["R"]
-            )
-        sid_tree.links.new(
-            seperate_node.outputs["G"],
-            combine_node.inputs["G"]
-            )
-        sid_tree.links.new(
-            seperate_node.outputs["B"],
-            combine_node.inputs["B"]
-            )
-        sid_tree.links.new(
-            alpha_dn.outputs[0],
-            combine_node.inputs["A"]
-            )
-        sid_tree.links.new(
-            final_dn.outputs[0],
-            seperate_node.inputs[0]
-            )
+
+    sid_tree.links.new(
+        combine_node.outputs[0],
+        output_node.inputs["Denoised Image"]
+        )
+    sid_tree.links.new(
+        seperate_node.outputs["R"],
+        combine_node.inputs["R"]
+        )
+    sid_tree.links.new(
+        seperate_node.outputs["G"],
+        combine_node.inputs["G"]
+        )
+    sid_tree.links.new(
+        seperate_node.outputs["B"],
+        combine_node.inputs["B"]
+        )
+    sid_tree.links.new(
+        alpha_dn.outputs[0],
+        combine_node.inputs["A"]
+        )
+    sid_tree.links.new(
+        final_dn.outputs[0],
+        seperate_node.inputs[0]
+        )
     return sid_tree
