@@ -19,14 +19,15 @@ class SID_PT_Panel(Panel):
         layout = self.layout
         scene = context.scene
         settings = scene.sid_settings
+        RenderEngine = scene.render.engine
 
-        if bpy.context.scene.render.engine != 'CYCLES':
+        if not (RenderEngine == 'CYCLES' or RenderEngine == 'LUXCORE'):
             cycles_warning = layout.column(align=True)
             cycles_warning.label(
-                text="Intel Denoiser (OIDN) render passes require Cycles.", icon='ERROR'
+                text="SID is not yet compatible with this render engine.", icon='ERROR'
                 )
             cycles_warning.label(
-                text="       The Render Engine will be switched to Cycles."
+                text="       Please change the render engine to a compatible one."
                 )
             layout.separator()
 
@@ -70,21 +71,23 @@ class SID_PT_Panel(Panel):
                 "use_emission",
                 text="Use Emission Pass"
                 )
-            passes.prop(
-                settings,
-                "use_environment",
-                text="Use Environment Pass"
-                )
+            if RenderEngine == 'CYCLES':
+                passes.prop(
+                    settings,
+                    "use_environment",
+                    text="Use Environment Pass"
+                    )
             passes.prop(
                 settings,
                 "use_transmission",
                 text="Use Transmission Pass"
                 )
-            passes.prop(
-                settings,
-                "use_volumetric",
-                text="Use Volumetric Pass"
-                )
+            if RenderEngine == 'CYCLES':
+                passes.prop(
+                    settings,
+                    "use_volumetric",
+                    text="Use Volumetric Pass"
+                    )
             layout.separator()
 
         advanced = layout.column(align=True)

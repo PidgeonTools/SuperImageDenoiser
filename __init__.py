@@ -1,16 +1,3 @@
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
-
 bl_info = {
     "name": "Super Image Denoiser (SID)",
     "author": "Kevin Lorengel, Chris Bond (Kamikaze)",
@@ -29,9 +16,14 @@ from bpy.props import (
 from .SuperImageDenoiser import SID_Create
 from .SID_Create_DenoiserGroup import create_sid_super_denoiser_group
 from .SID_Create_Group import create_sid_super_group
-from .SID_QualityStandart import create_sid_denoiser_standard
+
+#Cycles
 from .SID_QualityHigh import create_sid_denoiser_high
 from .SID_QualitySuper import create_sid_denoiser_super
+#Luxcore
+from .SID_QualityHigh_LuxCore import create_sid_denoiser_high_lc
+from .SID_QualitySuper_LuxCore import create_sid_denoiser_super_lc
+
 from .SID_Settings import SID_Settings
 from .SID_Panel import SID_PT_Panel
 
