@@ -1,0 +1,5 @@
+Installation
+============
+
+Open Blender, go to Edit > Preferences > Addons, then click Install and browse
+to where you downloaded the ZIP file. Select it, and press Install Add-On.

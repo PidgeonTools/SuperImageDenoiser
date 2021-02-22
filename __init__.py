@@ -1,10 +1,10 @@
 bl_info = {
     "name": "Super Image Denoiser (SID)",
     "author": "Kevin Lorengel, Chris Bond (Kamikaze)",
-    "version": (2, 3),
-    "blender": (2, 83, 0),
+    "version": (2, 8),
+    "blender": (2, 91, 0),
     "location": "Properties > Render > Create Super Denoiser",
-    "description": "SID denoises your Cycles renders near-perfectly, with only one click!",
+    "description": "SID denoises your renders near-perfectly, with only one click!",
     "warning": "",
     "wiki_url": "https://discord.gg/cnFdGQP",
     "category": "Compositor",
@@ -18,20 +18,31 @@ from .SID_Create_DenoiserGroup import create_sid_super_denoiser_group
 from .SID_Create_Group import create_sid_super_group
 
 #Cycles
-from .SID_QualityHigh import create_sid_denoiser_high
-from .SID_QualitySuper import create_sid_denoiser_super
+from .Cycles.SID_QualityHigh_Cycles import create_sid_denoiser_high_cy
+from .Cycles.SID_QualitySuper_Cycles import create_sid_denoiser_super_cy
+from .Cycles.SID_Create_Links_Cycles import create_links_cy
 #Luxcore
-from .SID_QualityHigh_LuxCore import create_sid_denoiser_high_lc
-from .SID_QualitySuper_LuxCore import create_sid_denoiser_super_lc
+from .LuxCore.SID_QualityHigh_LuxCore import create_sid_denoiser_high_lc
+from .LuxCore.SID_QualitySuper_LuxCore import create_sid_denoiser_super_lc
+from .LuxCore.SID_Create_Links_LuxCore import create_links_lc
+#Octane
+from .Octane.SID_QualityHigh_Octane import create_sid_denoiser_high_oc
+from .Octane.SID_Create_Links_Octane import create_links_o
 
 from .SID_Settings import SID_Settings
 from .SID_Panel import SID_PT_Panel
+
+from .SID_Temporal import TD_Render
+from .SID_Temporal import TD_Denoise
+
 
 # Register classes
 classes = (
     SID_Settings,
     SID_PT_Panel,
     SID_Create,
+    TD_Render,
+    TD_Denoise
 )
 
 def register():

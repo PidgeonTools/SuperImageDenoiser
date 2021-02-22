@@ -1,4 +1,6 @@
 import bpy
+from .SID_Settings import SID_Settings
+
 
 from bpy.types import (
     Panel,
@@ -20,104 +22,251 @@ class SID_PT_Panel(Panel):
         scene = context.scene
         settings = scene.sid_settings
         RenderEngine = scene.render.engine
+        view_layer = context.view_layer
+        cycles_view_layer = view_layer.cycles
+        #######################
+        ### DECIDE DENOISER ###
+        #######################
 
-        if not (RenderEngine == 'CYCLES' or RenderEngine == 'LUXCORE'):
-            cycles_warning = layout.column(align=True)
-            cycles_warning.label(
-                text="SID is not yet compatible with this render engine.", icon='ERROR'
-                )
-            cycles_warning.label(
-                text="       Please change the render engine to a compatible one."
-                )
-            layout.separator()
-
-        quality = layout.column(align=True)
-        quality.prop(
-            settings,
-            "quality",
-            text="Quality"
-            )
-        if settings.quality == 'STANDARD':
-            quality.label(
-                text="Denoise the whole image in a single pass.",
-                icon='INFO'
-                )
-            quality.label(
-                text="       Maximum compositing speed and least memory consumption."
-                )
-        elif settings.quality == 'HIGH':
-            quality.label(
-                text="Denoise related render passes in groups.", icon='INFO'
-                )
-            quality.label(
-                text="       Moderate compositing speed and increased memory consumption."
-                )
-        elif settings.quality == 'SUPER':
-            quality.label(
-                text="Denoise each render pass separately.", icon='INFO'
-                )
-            quality.label(
-                text="       Slowest compositing speed and greatly increased memory consumption."
-                )
-        layout.separator()
-
-        if settings.quality != "STANDARD":
-            passes = layout.column(align=True)
-            passes.label(
-                text="Render passes:"
-                )
-            passes.prop(
+        if RenderEngine == "CYCLES":
+            denoiser_type = layout.column(align=True)
+            denoiser_type.prop(
                 settings,
-                "use_emission",
-                text="Use Emission Pass"
+                "denoiser_type",
+                expand=True,
+                text="Denoiser Type"
                 )
-            if RenderEngine == 'CYCLES':
-                passes.prop(
-                    settings,
-                    "use_environment",
-                    text="Use Environment Pass"
-                    )
-            passes.prop(
-                settings,
-                "use_transmission",
-                text="Use Transmission Pass"
-                )
-            if RenderEngine == 'CYCLES':
-                passes.prop(
-                    settings,
-                    "use_volumetric",
-                    text="Use Volumetric Pass"
-                    )
+
             layout.separator()
+        else:
+            denoiser_type = "SID"
 
-        advanced = layout.column(align=True)
-        advanced.label(
-            text="Advanced:"
-            )
-        advanced.prop(
-            settings,
-            "compositor_reset",
-            text="reset compositor before adding SID?"
-            )
+        if settings.denoiser_type == "SID":
 
-        if settings.compositor_reset:
-            if bpy.context.scene.use_nodes == True:
-                compositor_warn = layout.column(align=True)
-                compositor_warn.label(
-                    text="Compositor nodes detected!", icon='ERROR'
+            CompatibleWith = [
+                'CYCLES',
+                'LUXCORE',
+                'octane'
+            ]
+
+            if not RenderEngine in CompatibleWith:
+                cycles_warning = layout.column(align=True)
+                cycles_warning.label(
+                    text="SID is not yet compatible with this render engine.", icon='ERROR'
                     )
-                compositor_warn.label(
-                    text="       Using Super Image Denoiser will delete all compositor nodes!"
-                    )
-                compositor_warn.label(
-                    text="       Ignore if you just added Super Image Denoiser."
+                cycles_warning.label(
+                    text="       Please change the render engine to a compatible one."
                     )
                 layout.separator()
 
-
-
-        if settings.quality != "STANDARD":
-            advanced.prop(settings, "use_mlEXR", text="Use Multi-Layer EXR")
+            quality = layout.column(align=True)
+            quality.prop(
+                settings,
+                "quality",
+                text="Quality"
+                )
+            if settings.quality == 'STANDARD':
+                quality.label(
+                    text="Denoise the whole image in a single pass.",
+                    icon='INFO'
+                    )
+                quality.label(
+                    text="       Maximum compositing speed and least memory consumption."
+                    )
+            elif settings.quality == 'HIGH':
+                quality.label(
+                    text="Denoise related render passes in groups.", icon='INFO'
+                    )
+                quality.label(
+                    text="       Moderate compositing speed and increased memory consumption."
+                    )
+            elif settings.quality == 'SUPER':
+                if RenderEngine == 'octane':
+                    quality.label(
+                        text="Renderrer does not support super quality.", icon='INFO'
+                        )
+                    quality.label(
+                        text="       Will use high quality setting instead"
+                    )
+                else:
+                    quality.label(
+                        text="Denoise each render pass separately.", icon='INFO'
+                        )
+                    quality.label(
+                        text="       Slowest compositing speed and greatly increased memory consumption."
+                        )
             layout.separator()
 
-        layout.operator("object.superimagedenoise", icon='SHADERFX')
+            if settings.quality != "STANDARD":
+                passes = layout.column(align=True)
+                passes.label(
+                    text="Render passes:"
+                    )
+                
+                subpasses = passes.row(align=True)
+                subpasses
+                ##############
+                ### CYCLES ###
+                ##############
+                if RenderEngine == 'CYCLES':
+                    subpasses.prop(
+                        settings,
+                        "use_emission",
+                        text="Emission",
+                        toggle=True
+                        )
+                    subpasses.prop(
+                        settings,
+                        "use_transmission",
+                        text="Transmission",
+                        toggle=True
+                        )
+                    subpasses.prop(
+                        settings,
+                        "use_environment",
+                        text="Environment",
+                        toggle=True
+                        )
+
+                    subpasses.prop(
+                        settings,
+                        "use_volumetric",
+                        text="Volumetric",
+                        toggle=True
+                        )
+                ###############
+                ### LUXCORE ###
+                ###############
+                if RenderEngine == 'LUXCORE':   
+                    subpasses.prop(
+                        settings,
+                        "use_emission",
+                        text="Emission",
+                        toggle=True
+                        )
+                    subpasses.prop(
+                        settings,
+                        "use_transmission",
+                        text="Transmission",
+                        toggle=True
+                        )
+                    if settings.use_transmission and settings.use_emission:
+                        subpasses.prop(
+                            settings,
+                            "use_caustics",
+                            text="Caustics",
+                            toggle=True
+                            )
+                ##############
+                ### OCTANE ###
+                ##############
+                if RenderEngine == 'octane':    
+                    subpasses.prop(
+                        settings,
+                        "use_emission",
+                        text="Emission",
+                        toggle=True
+                        )
+                    subpasses.prop(
+                        settings,
+                        "use_refraction",
+                        text="Refraction",
+                        toggle=True
+                        )
+                    subpasses.prop(
+                        settings,
+                        "use_transmission",
+                        text="Transmission",
+                        toggle=True
+                        )
+                    subpasses.prop(
+                        settings,
+                        "use_sss",
+                        text="SSS",
+                        toggle=True
+                        )
+                    subpasses.prop(
+                        settings,
+                        "use_volumetric",
+                        text="Volumetric",
+                        toggle=True
+                        )
+
+                layout.separator()
+
+            advanced = layout.column(align=True)
+            advanced.label(
+                text="Advanced:"
+                )
+            advanced.prop(
+                settings,
+                "compositor_reset",
+                text="refresh SID"
+                )
+
+            layout.separator()
+
+
+
+            if settings.quality != "STANDARD":
+                advanced.prop(settings, "use_mlEXR", text="Use Multi-Layer EXR")
+                layout.separator()
+
+            layout.operator("object.superimagedenoise", icon='SHADERFX')
+
+        else:
+
+            fileio = layout.column(align=True)
+            fileio.prop(
+                settings,
+                "inputdir",
+                text="Noisy EXR images"
+                )
+            fileio.separator()
+
+            fileio.prop(
+                settings,
+                "outputdir",
+                text="Clean EXR images"
+                )
+            
+            layout.separator()
+
+            layout.operator("object.temporaldenoise_render", icon='RENDER_ANIMATION')
+            
+            layout.separator()
+
+            tdsettings = layout.row()
+            tdsettings.prop(cycles_view_layer, "denoising_radius", text="Radius")
+            tdsettings.prop(cycles_view_layer, "denoising_neighbor_frames", text="Range")
+
+            tdsettings = layout.column()
+            tdsettings.prop(cycles_view_layer, "denoising_strength", slider=True, text="Strength")
+            tdsettings.prop(cycles_view_layer, "denoising_feature_strength", slider=True, text="Feature Strength")
+            tdsettings.prop(cycles_view_layer, "denoising_relative_pca")
+
+            layout.separator()
+
+            tdsettings = layout.column()
+            tdsettings.active = cycles_view_layer.use_denoising or cycles_view_layer.denoising_store_passes
+                
+            row = tdsettings.row(heading="Diffuse", align=True)
+            row.prop(cycles_view_layer, "denoising_diffuse_direct", text="Direct", toggle=True)
+            row.prop(cycles_view_layer, "denoising_diffuse_indirect", text="Indirect", toggle=True)
+
+            row = tdsettings.row(heading="Glossy", align=True)
+            row.prop(cycles_view_layer, "denoising_glossy_direct", text="Direct", toggle=True)
+            row.prop(cycles_view_layer, "denoising_glossy_indirect", text="Indirect", toggle=True)
+
+            row = tdsettings.row(heading="Transmission", align=True)
+            row.prop(cycles_view_layer, "denoising_transmission_direct", text="Direct", toggle=True)
+            row.prop(cycles_view_layer, "denoising_transmission_indirect", text="Indirect", toggle=True)
+
+            layout.separator()
+
+            layout.operator("object.temporaldenoise_denoise", icon='SHADERFX')
+            
+
+    ##### TEMPORAL #####
+
+
