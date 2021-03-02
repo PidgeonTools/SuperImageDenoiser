@@ -153,6 +153,9 @@ class TD_Render(Operator):
             self.saved_settings = save_render_settings(context, view_layer)
 
             ###change###
+            #denoiser
+            scene.cycles.use_denoising = False
+            scene.cycles.denoiser = 'NLM'
             #image
             scene.render.image_settings.file_format = 'OPEN_EXR_MULTILAYER'
             scene.render.image_settings.color_mode = 'RGBA'
@@ -216,9 +219,6 @@ class TD_Denoise(Operator):
     bl_label = "Denoise Noisy Frames 2/2"
     bl_description = "Denoises Noisy Frames, step 2 of 2"
 
-    #remember settings
-
-
     def execute(
             self,
             context,
@@ -226,25 +226,13 @@ class TD_Denoise(Operator):
 
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
-        view_layer = context.view_layer
 
         ####denoise###
-
-        ####save###
-        self.saved_settings = save_render_settings(context, view_layer)
-
-        ###change###
-        #denoiser
-        scene.cycles.use_denoising = True
-        scene.cycles.denoiser = 'NLM'
 
         os.chdir(settings.inputdir)
         myfiles=(glob.glob("*.exr"))
         for file in myfiles:
             print(settings.inputdir + file + " to " + settings.outputdir + file)
             bpy.ops.cycles.denoise_animation(input_filepath=(settings.inputdir + file), output_filepath=(settings.outputdir + file))
-
-        ####restore####
-        restore_render_settings(context, self.saved_settings , view_layer)
 
         return {'FINISHED'}
