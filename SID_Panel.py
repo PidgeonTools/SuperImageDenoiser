@@ -1,8 +1,9 @@
 import bpy
-from .SID_Settings import SID_Settings
+from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings
 
 
 from bpy.types import (
+    Context,
     Panel,
 )
 class SID_PT_Panel(Panel):
@@ -13,23 +14,32 @@ class SID_PT_Panel(Panel):
     bl_context = "render"
     bl_category = 'Pidgeon-Tools'
 
-    def draw_header(self, context):
+    def draw_header(self, context: Context):
         layout = self.layout
         layout.label(text="", icon='SHADERFX')
 
-    def draw(self, context):
+    def draw(self, context: Context):
         layout = self.layout
         scene = context.scene
-        settings = scene.sid_settings
+        settings: SID_Settings = scene.sid_settings
+        denoise_render_status: SID_DenoiseRenderStatus = settings.denoise_render_status
         RenderEngine = scene.render.engine
         view_layer = context.view_layer
         cycles_view_layer = view_layer.cycles
+
+        is_rendering = denoise_render_status.is_rendering
+        panel_active = not is_rendering
+
+        layout.use_property_split = True
+
         #######################
         ### DECIDE DENOISER ###
         #######################
 
         if RenderEngine == "CYCLES":
             denoiser_type = layout.column(align=True)
+            denoiser_type.active = panel_active
+
             denoiser_type.prop(
                 settings,
                 "denoiser_type",
@@ -215,32 +225,35 @@ class SID_PT_Panel(Panel):
             layout.operator("object.superimagedenoise", icon='SHADERFX')
 
         else:
+            ##### TEMPORAL #####
 
             fileio = layout.column(align=True)
-            fileio.prop(
-                settings,
-                "inputdir",
-                text="Noisy EXR images"
-                )
+            fileio.active = panel_active
+
+            fileio.prop(settings, "inputdir", text="Noisy EXR images")
             fileio.separator()
 
-            fileio.prop(
-                settings,
-                "outputdir",
-                text="Clean EXR images"
-                )
-            
+            fileio.prop(settings, "outputdir", text="Clean EXR images")
+            fileio.separator()
+
+            col = fileio.column(heading="Existing Files")
+            col.prop(scene.render, "use_overwrite", text="Overwrite")
             layout.separator()
 
-            layout.operator("object.temporaldenoise_render", icon='RENDER_ANIMATION')
-            
+            if panel_active:
+                layout.operator("object.temporaldenoise_render", icon='RENDER_ANIMATION')
+            else:
+                layout.operator("object.temporaldenoise_render_stop", icon='CANCEL')
+
             layout.separator()
 
             tdsettings = layout.row()
+            tdsettings.active = panel_active
             tdsettings.prop(cycles_view_layer, "denoising_radius", text="Radius")
             tdsettings.prop(cycles_view_layer, "denoising_neighbor_frames", text="Range")
 
             tdsettings = layout.column()
+            tdsettings.active = panel_active
             tdsettings.prop(cycles_view_layer, "denoising_strength", slider=True, text="Strength")
             tdsettings.prop(cycles_view_layer, "denoising_feature_strength", slider=True, text="Feature Strength")
             tdsettings.prop(cycles_view_layer, "denoising_relative_pca")
@@ -248,8 +261,8 @@ class SID_PT_Panel(Panel):
             layout.separator()
 
             tdsettings = layout.column()
-            tdsettings.active = cycles_view_layer.use_denoising or cycles_view_layer.denoising_store_passes
-                
+            tdsettings.active = panel_active and (cycles_view_layer.use_denoising or cycles_view_layer.denoising_store_passes)
+
             row = tdsettings.row(heading="Diffuse", align=True)
             row.prop(cycles_view_layer, "denoising_diffuse_direct", text="Direct", toggle=True)
             row.prop(cycles_view_layer, "denoising_diffuse_indirect", text="Indirect", toggle=True)
@@ -264,9 +277,6 @@ class SID_PT_Panel(Panel):
 
             layout.separator()
 
-            layout.operator("object.temporaldenoise_denoise", icon='SHADERFX')
-            
-
-    ##### TEMPORAL #####
-
-
+            tddenoise = layout.column(align=True)
+            tddenoise.active = panel_active
+            tddenoise.operator("object.temporaldenoise_denoise", icon='SHADERFX')

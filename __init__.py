@@ -29,20 +29,27 @@ from .LuxCore.SID_Create_Links_LuxCore import create_links_lc
 from .Octane.SID_QualityHigh_Octane import create_sid_denoiser_high_oc
 from .Octane.SID_Create_Links_Octane import create_links_o
 
-from .SID_Settings import SID_Settings
+from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings
 from .SID_Panel import SID_PT_Panel
 
-from .SID_Temporal import TD_Render
-from .SID_Temporal import TD_Denoise
+from .SID_Temporal import (
+    TD_OT_Render,
+    TD_OT_StopRender,
+    TD_OT_Denoise,
+    TD_OT_StopDenoise,
+    )
 
 
 # Register classes
 classes = (
+    SID_DenoiseRenderStatus,
     SID_Settings,
     SID_PT_Panel,
     SID_Create,
-    TD_Render,
-    TD_Denoise
+    TD_OT_Render,
+    TD_OT_StopRender,
+    TD_OT_Denoise,
+    TD_OT_StopDenoise,
 )
 
 def register():
@@ -51,7 +58,7 @@ def register():
     for cls in classes:
         register_class(cls)
 
-    bpy.types.Scene.sid_settings = PointerProperty(type=SID_Settings)
+    bpy.types.Scene.sid_settings = PointerProperty(type=SID_Settings, options=set())
 
 def unregister():
     from bpy.utils import unregister_class

@@ -6,13 +6,29 @@ from bpy.types import (
 from bpy.props import (
     BoolProperty,
     EnumProperty,
+    PointerProperty,
     StringProperty
 )
 
 # Classes
 
+class SID_DenoiseRenderStatus(PropertyGroup):
+    is_rendering: BoolProperty(
+        name="Rendering",
+        description="Currently rendering",
+        default=False,
+        options=set(), # Not animatable!
+        )
+
+    should_stop: BoolProperty(
+        name="Stop",
+        description="User requested stop",
+        default=False,
+        options=set(), # Not animatable!
+        )
+
 class SID_Settings(PropertyGroup):
-    
+
     denoiser_type: EnumProperty(
         name="Denoiser Type",
         items=(
@@ -28,17 +44,13 @@ class SID_Settings(PropertyGroup):
             ),
         ),
         default='SID',
-        description="Choose the denoiser type, SID is recomended for images, Temporal for animations only"
-    )
+        description="Choose the denoiser type, SID is recomended for images, Temporal for animations only",
+        options=set(), # Not animatable!
+        )
 
     quality: EnumProperty(
         name="Denoiser Quality",
         items=(
-#            (
-#                'INTERNAL NAME'
-#                'external name'
-#                'fancy description'
-#            )
             (
                 'STANDARD',
                 'Standard',
@@ -56,15 +68,17 @@ class SID_Settings(PropertyGroup):
             ),
         ),
         default='SUPER',
-        description="Choose the quality of the final denoised image. Affects memory usage and speed for compositing."
-    )
+        description="Choose the quality of the final denoised image. Affects memory usage and speed for compositing.",
+        options=set(), # Not animatable!
+        )
 
     inputdir: StringProperty(
         name="Noisy Frames",
         default= "",
         description="Noisy EXR Frames will be saved here",
         subtype='DIR_PATH',
-        maxlen=1024
+        maxlen=1024,
+        options=set(), # Not animatable!
         )
 
     outputdir: StringProperty(
@@ -72,59 +86,74 @@ class SID_Settings(PropertyGroup):
         default= "",
         description="Clean EXR Frames will be saved here",
         subtype='DIR_PATH',
-        maxlen=1024
+        maxlen=1024,
+        options=set(), # Not animatable!
         )
 
     use_emission: BoolProperty(
         name="Emission",
         default=True,
-        description="Enable this if you have Emissive materials in your scene"
+        description="Enable this if you have Emissive materials in your scene",
+        options=set(), # Not animatable!
         )
 
     use_environment: BoolProperty(
         name="Environment",
         default=True,
-        description="Enable this if you have Environment materials in your scene"
+        description="Enable this if you have Environment materials in your scene",
+        options=set(), # Not animatable!
         )
 
     use_transmission: BoolProperty(
         name="Transmission",
         default=True,
-        description="Enable this if you have Transmissive materials in your scene"
+        description="Enable this if you have Transmissive materials in your scene",
+        options=set(), # Not animatable!
         )
 
     use_volumetric: BoolProperty(
         name="Volume",
         default=False,
-        description="Enable this if you have Volumetric materials in your scene"
+        description="Enable this if you have Volumetric materials in your scene",
+        options=set(), # Not animatable!
         )
 
     use_refraction: BoolProperty(
         name="Refraction",
         default=False,
-        description="Enable this if you have Refractive materials in your scene"
+        description="Enable this if you have Refractive materials in your scene",
+        options=set(), # Not animatable!
         )
 
     use_sss: BoolProperty(
         name="SSS",
         default=False,
-        description="Enable this if you have SSS materials in your scene"
+        description="Enable this if you have SSS materials in your scene",
+        options=set(), # Not animatable!
         )
 
     compositor_reset: BoolProperty(
         name="CompositorReset",
         default=True,
-        description="Refreshes SID instead of adding another node group"
+        description="Refreshes SID instead of adding another node group",
+        options=set(), # Not animatable!
         )
 
     use_mlEXR: BoolProperty(
         name="MultiLayerEXR",
         default=False,
-        description="Export a denoised MultiLayer EXR file"
+        description="Export a denoised MultiLayer EXR file",
+        options=set(), # Not animatable!
         )
 
     use_caustics: BoolProperty(
         name="Caustics",
         default=True,
-        description="Enable this if you have Caustics in your Scene"
+        description="Enable this if you have Caustics in your Scene",
+        options=set(), # Not animatable!
+        )
+
+    denoise_render_status: PointerProperty(
+        type=SID_DenoiseRenderStatus,
+        options=set(), # Not animatable!
         )
