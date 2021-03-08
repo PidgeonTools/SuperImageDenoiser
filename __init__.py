@@ -29,7 +29,7 @@ from .LuxCore.SID_Create_Links_LuxCore import create_links_lc
 from .Octane.SID_QualityHigh_Octane import create_sid_denoiser_high_oc
 from .Octane.SID_Create_Links_Octane import create_links_o
 
-from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings
+from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
 from .SID_Panel import SID_PT_Panel
 
 from .SID_Temporal import (
@@ -43,6 +43,7 @@ from .SID_Temporal import (
 # Register classes
 classes = (
     SID_DenoiseRenderStatus,
+    SID_TemporalDenoiserStatus,
     SID_Settings,
     SID_PT_Panel,
     SID_Create,

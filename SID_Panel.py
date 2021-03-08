@@ -1,11 +1,10 @@
 import bpy
-from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings
-
-
 from bpy.types import (
     Context,
     Panel,
 )
+from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
+
 class SID_PT_Panel(Panel):
 
     bl_label = "Create Super Denoiser"
@@ -23,12 +22,17 @@ class SID_PT_Panel(Panel):
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
         denoise_render_status: SID_DenoiseRenderStatus = settings.denoise_render_status
+        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
         RenderEngine = scene.render.engine
         view_layer = context.view_layer
         cycles_view_layer = view_layer.cycles
 
+        # currently rendering noisy frames?
         is_rendering = denoise_render_status.is_rendering
-        panel_active = not is_rendering
+        # currently denoising?
+        is_denoising = temporal_denoiser_status.is_denoising
+
+        panel_active = not is_rendering and not is_denoising
 
         layout.use_property_split = True
 
@@ -240,12 +244,14 @@ class SID_PT_Panel(Panel):
             col.prop(scene.render, "use_overwrite", text="Overwrite")
             layout.separator()
 
-            if panel_active:
-                layout.operator("object.temporaldenoise_render", icon='RENDER_ANIMATION')
+            tdrender = layout.column(align=True)
+            if is_rendering:
+                tdrender.operator("object.temporaldenoise_render_stop", icon='CANCEL')
             else:
-                layout.operator("object.temporaldenoise_render_stop", icon='CANCEL')
+                tdrender.active = panel_active
+                tdrender.operator("object.temporaldenoise_render", icon='RENDER_ANIMATION')
 
-            layout.separator()
+            tdrender.separator()
 
             tdsettings = layout.row()
             tdsettings.active = panel_active
@@ -278,5 +284,11 @@ class SID_PT_Panel(Panel):
             layout.separator()
 
             tddenoise = layout.column(align=True)
-            tddenoise.active = panel_active
-            tddenoise.operator("object.temporaldenoise_denoise", icon='SHADERFX')
+            if is_denoising:
+                tddenoise.operator("object.temporaldenoise_denoise_stop", icon='CANCEL')
+                tddenoise.separator()
+                tddenoise.label(text=f"{temporal_denoiser_status.files_remaining} files remaining", icon='INFO')
+                tddenoise.prop(temporal_denoiser_status, "percent_complete")
+            else:
+                tddenoise.active = panel_active
+                tddenoise.operator("object.temporaldenoise_denoise", icon='SHADERFX')

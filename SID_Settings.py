@@ -6,6 +6,8 @@ from bpy.types import (
 from bpy.props import (
     BoolProperty,
     EnumProperty,
+    FloatProperty,
+    IntProperty,
     PointerProperty,
     StringProperty
 )
@@ -26,6 +28,58 @@ class SID_DenoiseRenderStatus(PropertyGroup):
         default=False,
         options=set(), # Not animatable!
         )
+
+
+def get_percent_complete(self):
+    print(self)
+    files_total = self['files_total']
+    files_done = self['files_done']
+    print(f"files_total: {files_total}, files_done: {files_done}")
+    if files_total == 0:
+        return 0
+    else:
+        return 100 * files_done / files_total
+
+class SID_TemporalDenoiserStatus(PropertyGroup):
+    is_denoising: BoolProperty(
+        name="Denoising",
+        description="Currently denoising",
+        default=False,
+        options=set(), # Not animatable!
+        )
+
+    should_stop: BoolProperty(
+        name="Stop",
+        description="User requested stop",
+        default=False,
+        options=set(), # Not animatable!
+        )
+
+    files_total: IntProperty(
+        name="Total Files",
+        description="Total number of files to denoise",
+        options=set(), # Not animatable!
+        )
+
+    files_done: IntProperty(
+        name="Files Done",
+        description="Number of files denoised",
+        options=set(), # Not animatable!
+        )
+
+    files_remaining: IntProperty(
+        name="Files Remaining",
+        description="Number of files still remaining to denoise",
+        options=set(), # Not animatable!
+        )
+
+    percent_complete: FloatProperty(
+        name="%",
+        description="Percentage completed of files denoised",
+        options=set(), # Not animatable!
+        get=get_percent_complete,
+        )
+
 
 class SID_Settings(PropertyGroup):
 
@@ -153,7 +207,14 @@ class SID_Settings(PropertyGroup):
         options=set(), # Not animatable!
         )
 
+    # Temporal denoiser part 1: render noisy frames
     denoise_render_status: PointerProperty(
         type=SID_DenoiseRenderStatus,
+        options=set(), # Not animatable!
+        )
+
+    # Temporal denoiser part 2: denoise animation
+    temporal_denoiser_status: PointerProperty(
+        type=SID_TemporalDenoiserStatus,
         options=set(), # Not animatable!
         )

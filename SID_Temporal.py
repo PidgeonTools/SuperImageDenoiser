@@ -3,10 +3,9 @@ import glob
 import os
 import re
 import unicodedata
-from bpy.props import BoolProperty
-from bpy.types import Context, Event, Operator, PropertyGroup, Scene, Timer, ViewLayer
+from bpy.types import Context, Event, Operator, Scene, Timer, ViewLayer
 from math import ceil, log10
-from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings
+from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
 from typing import List, NamedTuple
 
 
@@ -192,6 +191,15 @@ class TD_OT_Render(Operator):
         self.stop = True
 
 
+    @classmethod
+    def poll(cls, context: Context):
+        scene = context.scene
+        settings: SID_Settings = scene.sid_settings
+        denoise_render_status: SID_DenoiseRenderStatus = settings.denoise_render_status
+        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
+
+        return not denoise_render_status.is_rendering and not temporal_denoiser_status.is_denoising
+
     def execute(self, context: Context):
         scene = context.scene
 
@@ -347,7 +355,7 @@ class TD_OT_Render(Operator):
 
 class TD_OT_StopRender(Operator):
     bl_idname = "object.temporaldenoise_render_stop"
-    bl_label = "Stop by Pressing ESC"
+    bl_label = "Press ESC to Stop Rendering"
     bl_description = "You must press ESC to stop the rendering process."
 
     def execute(self, context: Context):
@@ -365,6 +373,10 @@ class TD_OT_Denoise(Operator):
     bl_label = "Denoise Noisy Frames 2/2"
     bl_description = "Denoises Noisy Frames, step 2 of 2"
 
+    timer: Timer = None
+    stop: bool = False
+    running: bool = False
+    files: List[str] = []
     saved_settings: SavedRenderSettings = None
 
     @classmethod
@@ -372,30 +384,102 @@ class TD_OT_Denoise(Operator):
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
         denoise_render_status: SID_DenoiseRenderStatus = settings.denoise_render_status
+        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
 
-        return not denoise_render_status.is_rendering
+        return not denoise_render_status.is_rendering and not temporal_denoiser_status.is_denoising
 
     def execute(self, context: Context):
         scene = context.scene
-        settings: SID_Settings = scene.sid_settings
         view_layer = context.view_layer
+
+        settings: SID_Settings = scene.sid_settings
+        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
+
+        # Reset state
+        self.stop = False
+        self.running = False
+        self.files = []
+        temporal_denoiser_status.is_denoising = True
+        temporal_denoiser_status.should_stop = False
+        temporal_denoiser_status.files_total = 0
+        temporal_denoiser_status.files_done = 0
+        temporal_denoiser_status.files_remaining = 0
 
         self.saved_settings = save_render_settings(context, view_layer)
 
-        ####denoise###
+        # Prepare list of files to denoise
+        os.chdir(settings.inputdir)
+        self.files = glob.glob("*.exr")
+        # print(self.files)
+
+        temporal_denoiser_status.files_total = len(self.files)
+        temporal_denoiser_status.files_remaining = temporal_denoiser_status.files_total
+        print(f"{temporal_denoiser_status.files_total} files to denoise")
+
+        # Setup timer and modal
+        self.timer = context.window_manager.event_timer_add(0.5, window=context.window)
+        context.window_manager.modal_handler_add(self)
+
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context: Context, event: Event):
+        scene = context.scene
+
+        settings: SID_Settings = scene.sid_settings
+        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
+
+        if event.type == 'ESC':
+            self.stop = True
+
+        elif event.type == 'TIMER':
+            was_cancelled = self.stop or temporal_denoiser_status.should_stop
+
+            if was_cancelled or not self.files:
+                print("\nStopping.")
+
+                # Remove callbacks
+                context.window_manager.event_timer_remove(self.timer)
+
+                temporal_denoiser_status.should_stop = False
+                temporal_denoiser_status.is_denoising = False
+
+                self.cleanup(context)
+
+                if was_cancelled:
+                    return {'CANCELLED'}
+                return {'FINISHED'}
+
+            elif not self.running:
+                file = self.files.pop(0)
+                print(file)
+
+                self.denoise_file(scene, file)
+
+                temporal_denoiser_status.files_remaining -= 1
+                temporal_denoiser_status.files_done += 1
+
+        # Allow stop button to cancel rendering rather than this modal
+        return {'PASS_THROUGH'}
+
+    def denoise_file(self, scene: Scene, file: str):
+        settings: SID_Settings = scene.sid_settings
+
+        self.running = True
+
         # denoiser
         scene.cycles.use_denoising = False
         scene.cycles.denoiser = 'NLM'
 
-        os.chdir(settings.inputdir)
-        myfiles=(glob.glob("*.exr"))
-        for file in myfiles:
-            print(settings.inputdir + file + " to " + settings.outputdir + file)
-            bpy.ops.cycles.denoise_animation(input_filepath=(settings.inputdir + file), output_filepath=(settings.outputdir + file))
+        ####denoise###
+        print(settings.inputdir + file + " to " + settings.outputdir + file)
+        bpy.ops.cycles.denoise_animation(input_filepath=(settings.inputdir + file), output_filepath=(settings.outputdir + file))
+
+        self.running = False
+
+    def cleanup(self, context: Context):
+        view_layer = context.view_layer
 
         restore_render_settings(context, self.saved_settings, view_layer)
-
-        return {'FINISHED'}
 
 class TD_OT_StopDenoise(Operator):
     bl_idname = "object.temporaldenoise_denoise_stop"
@@ -403,9 +487,10 @@ class TD_OT_StopDenoise(Operator):
     bl_description = "Stop denoising all frames."
 
     def execute(self, context: Context):
-        ShowMessageBox(
-            "This function has not been implemented yet, sorry.",
-            "Not Implemented"
-            )
+        scene = context.scene
+        settings: SID_Settings = scene.sid_settings
+        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
+
+        temporal_denoiser_status.should_stop = True
 
         return {'FINISHED'}
