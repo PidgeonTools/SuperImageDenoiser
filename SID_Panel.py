@@ -284,6 +284,7 @@ class SID_PT_Panel(Panel):
             layout.separator()
 
             tddenoise = layout.column(align=True)
+            tddenoise.active = True
             if is_denoising:
                 tddenoise.operator("object.temporaldenoise_denoise_stop", icon='CANCEL')
                 tddenoise.separator()

@@ -40,6 +40,9 @@ def get_percent_complete(self):
     else:
         return 100 * files_done / files_total
 
+def set_percent_complete(self, value):
+    pass
+
 class SID_TemporalDenoiserStatus(PropertyGroup):
     is_denoising: BoolProperty(
         name="Denoising",
@@ -76,8 +79,12 @@ class SID_TemporalDenoiserStatus(PropertyGroup):
     percent_complete: FloatProperty(
         name="%",
         description="Percentage completed of files denoised",
+        subtype='PERCENTAGE',
+        min=0,
+        max=100,
         options=set(), # Not animatable!
         get=get_percent_complete,
+        set=set_percent_complete,
         )
 
 
