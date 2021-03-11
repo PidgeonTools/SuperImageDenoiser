@@ -37,9 +37,6 @@ class SavedRenderSettings(NamedTuple):
     old_pass_en: bool
     old_pass_sh: bool
     old_pass_ao: bool
-    old_pass_co: bool
-    old_pass_cm: bool
-    old_pass_ca: bool
     old_file_format: str
     old_compositor: bool
     old_sequencer: bool
@@ -83,9 +80,6 @@ def save_render_settings(context: Context, view_layer: ViewLayer):
         old_pass_en = view_layer.use_pass_environment,
         old_pass_sh = view_layer.use_pass_shadow,
         old_pass_ao = view_layer.use_pass_ambient_occlusion,
-        old_pass_co = view_layer.cycles.use_pass_crypto_object,
-        old_pass_cm = view_layer.cycles.use_pass_crypto_material,
-        old_pass_ca = view_layer.cycles.use_pass_crypto_asset,
         old_file_format = render.image_settings.file_format,
         old_compositor = scene.render.use_compositing,
         old_sequencer = scene.render.use_sequencer,
@@ -129,9 +123,6 @@ def restore_render_settings(
     view_layer.use_pass_environment = savedsettings.old_pass_en
     view_layer.use_pass_shadow = savedsettings.old_pass_sh
     view_layer.use_pass_ambient_occlusion = savedsettings.old_pass_ao
-    view_layer.cycles.use_pass_crypto_object = savedsettings.old_pass_co
-    view_layer.cycles.use_pass_crypto_material = savedsettings.old_pass_cm
-    view_layer.cycles.use_pass_crypto_asset = savedsettings.old_pass_ca
     render.image_settings.file_format = savedsettings.old_file_format
     scene.render.use_compositing = savedsettings.old_compositor
     scene.render.use_sequencer = savedsettings.old_compositor
@@ -335,9 +326,6 @@ class TD_OT_Render(Operator):
         view_layer.use_pass_environment = False
         view_layer.use_pass_shadow = False
         view_layer.use_pass_ambient_occlusion = False
-        view_layer.cycles.use_pass_crypto_object = False
-        view_layer.cycles.use_pass_crypto_material = False
-        view_layer.cycles.use_pass_crypto_asset = False
         scene.render.filepath = filepath
         scene.render.use_compositing = False
         scene.render.use_sequencer = False
