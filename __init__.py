@@ -10,6 +10,7 @@ bl_info = {
     "category": "Compositor",
 }
 import bpy
+from bpy.app.handlers import persistent
 from bpy.props import (
     PointerProperty,
 )
@@ -53,6 +54,14 @@ classes = (
     TD_OT_StopDenoise,
 )
 
+@persistent
+def load_handler(dummy):
+    try:
+        bpy.context.scene.sid_settings.denoise_render_status.is_rendering = False
+        bpy.context.scene.sid_settings.temporal_denoiser_status.is_denoising = False
+    except:
+        pass
+
 def register():
     from bpy.utils import register_class
 
@@ -60,6 +69,8 @@ def register():
         register_class(cls)
 
     bpy.types.Scene.sid_settings = PointerProperty(type=SID_Settings, options=set())
+
+    bpy.app.handlers.load_post.append(load_handler)
 
 def unregister():
     from bpy.utils import unregister_class

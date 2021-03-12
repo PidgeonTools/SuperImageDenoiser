@@ -31,14 +31,9 @@ class SID_DenoiseRenderStatus(PropertyGroup):
 
 
 def get_percent_complete(self):
-    print(self)
     files_total = self['files_total']
     files_done = self['files_done']
-    print(f"files_total: {files_total}, files_done: {files_done}")
-    if files_total == 0:
-        return 0
-    else:
-        return 100 * files_done / files_total
+    return 0 if files_total == 0 else 100 * files_done / files_total
 
 def set_percent_complete(self, value):
     pass
