@@ -146,10 +146,12 @@ def slugify(value: str) -> str:
     return re.sub(r'[-\s]+', '-', value).strip('-_')
 
 
-def ShowMessageBox(message = "", title = "Information", icon = 'INFO'):
+def ShowMessageBox(message: str = "", title = "Information", icon = 'INFO'):
 
     def draw(self, context: Context):
-        self.layout.label(text=message)
+        lines = message.splitlines()
+        for line in lines:
+            self.layout.label(text=line)
 
     bpy.context.window_manager.popup_menu(draw, title = title, icon = icon)
 
@@ -249,7 +251,7 @@ class TD_OT_Render(Operator):
             was_cancelled = self.stop or denoise_render_status.should_stop
 
             if was_cancelled or not self.jobs:
-                # print("\nStopping.")
+                print("\nStopping.")
 
                 # Remove callbacks
                 bpy.app.handlers.render_pre.remove(self.render_pre)
@@ -273,7 +275,6 @@ class TD_OT_Render(Operator):
                     self.cleanup_job(context, self.current_job)
 
                 job = self.jobs[0]
-                # print(job)
 
                 self.start_job(context, job)
 
@@ -387,7 +388,7 @@ class TD_OT_Denoise(Operator):
         self.stop = False
         self.running = False
         self.files = []
-        temporal_denoiser_status.is_denoising = True
+        temporal_denoiser_status.is_denoising = False
         temporal_denoiser_status.should_stop = False
         temporal_denoiser_status.files_total = 0
         temporal_denoiser_status.files_done = 0
@@ -396,13 +397,22 @@ class TD_OT_Denoise(Operator):
         self.saved_settings = save_render_settings(context, view_layer)
 
         # Prepare list of files to denoise
-        os.chdir(settings.inputdir)
-        self.files = glob.glob("*.exr")
-        # print(self.files)
+        try:
+            input_dir = os.path.realpath(bpy.path.abspath(settings.inputdir))
+            print(f"Denoising all files in {input_dir}")
 
-        temporal_denoiser_status.files_total = len(self.files)
-        temporal_denoiser_status.files_remaining = temporal_denoiser_status.files_total
-        print(f"{temporal_denoiser_status.files_total} files to denoise")
+            os.chdir(input_dir)
+            self.files = glob.glob("*.exr")
+        except:
+            # return {'CANCELLED'}
+            raise
+
+        files_total = len(self.files)
+        print(f"{files_total} {'file' if files_total == 1 else 'files'} to denoise")
+
+        temporal_denoiser_status.files_total = files_total
+        temporal_denoiser_status.files_remaining = files_total
+        temporal_denoiser_status.is_denoising = True
 
         # Setup timer and modal
         self.timer = context.window_manager.event_timer_add(0.5, window=context.window)
@@ -439,7 +449,6 @@ class TD_OT_Denoise(Operator):
 
             elif not self.running:
                 file = self.files.pop(0)
-                print(file)
 
                 self.denoise_file(scene, file)
 
@@ -458,9 +467,23 @@ class TD_OT_Denoise(Operator):
         scene.cycles.use_denoising = False
         scene.cycles.denoiser = 'NLM'
 
-        ####denoise###
-        print(settings.inputdir + file + " to " + settings.outputdir + file)
-        bpy.ops.cycles.denoise_animation(input_filepath=(settings.inputdir + file), output_filepath=(settings.outputdir + file))
+        try:
+            input_dir = bpy.path.abspath(settings.inputdir)
+            input_file = os.path.realpath(os.path.join(input_dir, file))
+            output_dir = bpy.path.abspath(settings.outputdir)
+            output_file = os.path.realpath(os.path.join(output_dir, file))
+
+            ####denoise###
+            print(input_file + " to " + output_file)
+            bpy.ops.cycles.denoise_animation(input_filepath=input_file, output_filepath=output_file)
+        except Exception as err:
+            err_text = err.__str__()
+            self.report({'ERROR'}, err_text.strip())
+            ShowMessageBox(
+                err_text,
+                "An error occurred while Temporal Denoising",
+                'ERROR'
+            )
 
         self.running = False
 
