@@ -1,19 +1,22 @@
 import bpy
+from bpy.types import Context, Node, NodeSocket, ViewLayer
+from typing import List
 
 from .. import SID_Settings
 
 def create_luxcore_passes(
         settings: SID_Settings,
-        context,
-        renlayers_node,
-        sid_node,
-        view_layer,
-        output_file_node,
-        composite_node,
+        context: Context,
+        renlayers_node: Node,
+        sid_node: Node,
+        view_layer: ViewLayer,
+        output_file_node: Node,
+        connect_sockets: List[NodeSocket],
         ):
-    
+
     scene = context.scene
     ntree = scene.node_tree
+
     ##Enable Passes##
     view_layer.luxcore.aovs.avg_shading_normal = True
     view_layer.luxcore.aovs.albedo = True
@@ -29,9 +32,8 @@ def create_luxcore_passes(
     # no specific volume pass
     # Emission & Environment
     view_layer.luxcore.aovs.emission = True
-    # Connect it all for LuxCore
-    renlayers_node.layer = view_layer.name
 
+    # Connect it all for LuxCore
     ntree.links.new(
         renlayers_node.outputs["DIRECT_DIFFUSE"],
         sid_node.inputs["DiffDir"]
@@ -78,20 +80,25 @@ def create_luxcore_passes(
         )
 
 
+    sid_output_socket: NodeSocket
+    if settings.quality == 'SUPER':
+        sid_output_socket = sid_node.outputs["SUPER Quality"]
+    elif settings.quality == 'HIGH':
+        sid_output_socket = sid_node.outputs["High Quality"]
+    else:
+        sid_output_socket = sid_node.outputs["Standard Quality"]
+
+    # Connect SID Node to sockets
+    for socket in connect_sockets:
+        ntree.links.new(sid_output_socket, socket)
+
     if settings.use_mlEXR:
+        ntree.links.new(
+            sid_output_socket,
+            output_file_node.inputs["Image"]
+            )
+
         output_file_node.file_slots.new("Diffuse")
-
-        if settings.quality == 'SUPER':
-            ntree.links.new(
-                sid_node.outputs["SUPER Quality"],
-                output_file_node.inputs["Image"]
-                )
-        elif settings.quality == 'HIGH':
-            ntree.links.new(
-                sid_node.outputs["High Quality"],
-                output_file_node.inputs["Image"]
-                )
-
         ntree.links.new(
             sid_node.outputs['DN Diffuse'],
             output_file_node.inputs['Diffuse']
@@ -123,21 +130,3 @@ def create_luxcore_passes(
                 sid_node.outputs['DN Caustics'],
                 output_file_node.inputs['Caustics']
                 )
-
-        output_file_node.format.file_format = 'OPEN_EXR_MULTILAYER'
-    if settings.quality == 'SUPER':
-        ntree.links.new(
-            sid_node.outputs["SUPER Quality"],
-            composite_node.inputs["Image"]
-            )
-    elif settings.quality == 'HIGH':
-        ntree.links.new(
-            sid_node.outputs["High Quality"],
-            composite_node.inputs["Image"]
-            )
-    else:
-        ntree.links.new(
-            sid_node.outputs["Standard Quality"],
-            composite_node.inputs["Image"]
-            )
-    return sid_node

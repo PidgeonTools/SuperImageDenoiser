@@ -1,19 +1,22 @@
 import bpy
+from bpy.types import Context, Node, NodeSocket, ViewLayer
+from typing import List
 
 from .. import SID_Settings
 
 def create_octane_passes(
         settings: SID_Settings,
-        context,
-        renlayers_node,
-        sid_node,
-        view_layer,
-        output_file_node,
-        composite_node,
+        context: Context,
+        renlayers_node: Node,
+        sid_node: Node,
+        view_layer: ViewLayer,
+        output_file_node: Node,
+        connect_sockets: List[NodeSocket],
         ):
-    
+
     scene = context.scene
     ntree = scene.node_tree
+
     #Important
     view_layer.use_pass_oct_info_shading_normal = True
     # Diffuse
@@ -97,20 +100,25 @@ def create_octane_passes(
         )
 
 
+    sid_output_socket: NodeSocket
+    if settings.quality == 'SUPER':
+        sid_output_socket = sid_node.outputs["SUPER Quality"]
+    elif settings.quality == 'HIGH':
+        sid_output_socket = sid_node.outputs["High Quality"]
+    else:
+        sid_output_socket = sid_node.outputs["Standard Quality"]
+
+    # Connect SID Node to sockets
+    for socket in connect_sockets:
+        ntree.links.new(sid_output_socket, socket)
+
     if settings.use_mlEXR:
+        ntree.links.new(
+            sid_output_socket,
+            output_file_node.inputs["Image"]
+            )
+
         output_file_node.file_slots.new("Diffuse")
-
-        if settings.quality == 'SUPER':
-            ntree.links.new(
-                sid_node.outputs["High Quality"],
-                output_file_node.inputs["Image"]
-                )
-        elif settings.quality == 'HIGH':
-            ntree.links.new(
-                sid_node.outputs["High Quality"],
-                output_file_node.inputs["Image"]
-                )
-
         ntree.links.new(
             sid_node.outputs['DN Diffuse'],
             output_file_node.inputs['Diffuse']
@@ -162,28 +170,9 @@ def create_octane_passes(
                 sid_node.outputs['DN VolumeEmission'],
                 output_file_node.inputs['VolumeEmission']
                 )
+
         output_file_node.file_slots.new("Bad Pass")
         ntree.links.new(
             sid_node.outputs['Bad Pass'],
             output_file_node.inputs['Bad Pass']
             )
-
-        output_file_node.format.file_format = 'OPEN_EXR_MULTILAYER'
-        #made me cry
-
-    if settings.quality == 'SUPER':
-        ntree.links.new(
-            sid_node.outputs["High Quality"],
-            composite_node.inputs["Image"]
-            )
-    elif settings.quality == 'HIGH':
-        ntree.links.new(
-            sid_node.outputs["High Quality"],
-            composite_node.inputs["Image"]
-            )
-    else:
-        ntree.links.new(
-            sid_node.outputs["Standard Quality"],
-            composite_node.inputs["Image"]
-            )
-    return sid_node

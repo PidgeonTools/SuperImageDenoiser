@@ -64,7 +64,7 @@ def create_LuxCore_group(
     super_denoiser_node.location = (0, 0)
     super_denoiser_node.name = super_denoiser_node.label = "SUPER Denoiser"
 
-#Standard
+    #Standard
     input_sockets = [
         "Noisy Image",
         "Denoising Normal",

@@ -8,10 +8,10 @@ def create_cycles_group(
         super_denoiser_tree,
         settings: SID_Settings
         ):
-        
+
     sid_super_group = bpy.data.node_groups.new(
         type='CompositorNodeTree',
-        name=".SuperImageDenoiser.Cycles"
+        name=".SuperImageDenoiser"
         )
     input_node = sid_super_group.nodes.new("NodeGroupInput")
     input_node.location = (-200, 0)
