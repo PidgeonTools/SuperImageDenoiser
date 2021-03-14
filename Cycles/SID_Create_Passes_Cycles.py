@@ -164,7 +164,7 @@ def create_cycles_passes(
         if settings.use_environment:
             output_file_node.file_slots.new("Env")
             ntree.links.new(
-                sid_node.outputs['Envrionment'],
+                sid_node.outputs['Environment'],
                 output_file_node.inputs['Env']
                 )
 

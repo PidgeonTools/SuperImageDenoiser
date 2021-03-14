@@ -297,10 +297,10 @@ def create_links_cy(sid_denoiser_tree, settings: SID_Settings):
                 output_node.inputs["Emission"]
                 )
         if settings.use_environment:
-            sid_tree.outputs.new("NodeSocketColor", "Envrionment")
+            sid_tree.outputs.new("NodeSocketColor", "Environment")
             sid_tree.links.new(
                 input_node.outputs['Env'],
-                output_node.inputs["Envrionment"]
+                output_node.inputs["Environment"]
                 )
         sid_tree.links.new(
             diffuse_denoiser_node.outputs['Denoised Image'],

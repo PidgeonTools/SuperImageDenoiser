@@ -56,7 +56,7 @@ def create_cycles_group(
         if settings.use_emission:
             sid_super_group.outputs.new("NodeSocketColor", 'Emission')
         if settings.use_environment:
-            sid_super_group.outputs.new("NodeSocketColor", "Envrionment")
+            sid_super_group.outputs.new("NodeSocketColor", "Environment")
 
 
 
@@ -178,7 +178,7 @@ def create_cycles_group(
             )
         if settings.use_environment:
             sid_super_group.links.new(
-                denoiser_type.outputs["Envrionment"],
-                output_node.inputs["Envrionment"]
+                denoiser_type.outputs["Environment"],
+                output_node.inputs["Environment"]
             )
     return sid_super_group
