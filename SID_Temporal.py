@@ -44,6 +44,7 @@ class SavedRenderSettings(NamedTuple):
     old_path: bool
     old_usedenoise: bool
     old_denoiser: str
+    old_saveBuffers: bool
 
 class RenderJob(NamedTuple):
     filepath: str
@@ -87,6 +88,7 @@ def save_render_settings(context: Context, view_layer: ViewLayer):
         old_path = scene.render.filepath,
         old_usedenoise = scene.cycles.use_denoising,
         old_denoiser = scene.cycles.denoiser
+        old_saveBuffers = scene.render.use_save_buffers
     )
 
 def restore_render_settings(
@@ -130,6 +132,7 @@ def restore_render_settings(
     scene.render.filepath = savedsettings.old_path
     scene.cycles.use_denoising = savedsettings.old_usedenoise
     scene.cycles.denoiser = savedsettings.old_denoiser
+    scene.render.use_save_buffers = savedsettings.old_saveBuffers
 
 
 def slugify(value: str) -> str:
@@ -330,6 +333,7 @@ class TD_OT_Render(Operator):
         scene.render.filepath = filepath
         scene.render.use_compositing = False
         scene.render.use_sequencer = False
+        scene.render.use_save_buffers = False
         # render only this view layer
         scene.render.use_single_layer = True
         context.window.view_layer = view_layer
