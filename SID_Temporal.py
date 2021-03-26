@@ -87,7 +87,7 @@ def save_render_settings(context: Context, view_layer: ViewLayer):
         old_use_single_layer = scene.render.use_single_layer,
         old_path = scene.render.filepath,
         old_usedenoise = scene.cycles.use_denoising,
-        old_denoiser = scene.cycles.denoiser
+        old_denoiser = scene.cycles.denoiser,
         old_saveBuffers = scene.render.use_save_buffers
     )
 

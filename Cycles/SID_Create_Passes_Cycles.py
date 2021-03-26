@@ -94,7 +94,7 @@ def create_cycles_passes(
             sid_node.inputs["Emit"]
             )
 
-    if settings.use_environment and (scene.render.film_transparent = False):
+    if settings.use_environment and not scene.render.film_transparent:
         ntree.links.new(
             renlayers_node.outputs["Env"],
             sid_node.inputs["Env"]
