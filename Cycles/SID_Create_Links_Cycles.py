@@ -1,13 +1,14 @@
 import bpy
+from bpy.types import NodeTree
 
 from .. import SID_Settings
 
-def create_links_cy(sid_denoiser_tree, settings: SID_Settings):
-
+def create_links_cy(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> NodeTree:
 
     # Creates a super denoiser node group using the provided subgroup
+    scene = bpy.context.scene
 
-    sid_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
+    sid_tree: NodeTree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
     input_node = sid_tree.nodes.new("NodeGroupInput")
     input_node.location = (-200, 0)
 
@@ -177,7 +178,7 @@ def create_links_cy(sid_denoiser_tree, settings: SID_Settings):
         add_emission.location = (800, 200)
         add_emission.name = add_emission.label = "Add Emission"
 
-    if settings.use_environment:
+    if settings.use_environment and not scene.render.film_transparent:
         add_environment = sid_tree.nodes.new(type="CompositorNodeMixRGB")
         add_environment.blend_type = "ADD"
         add_environment.inputs[2].default_value = (0, 0, 0, 1)
@@ -245,7 +246,7 @@ def create_links_cy(sid_denoiser_tree, settings: SID_Settings):
             )
         prev_output = add_emission.outputs[0]
 
-    if settings.use_environment:
+    if settings.use_environment and not scene.render.film_transparent:
         sid_tree.links.new(
             prev_output,
             add_environment.inputs[1]
@@ -283,43 +284,42 @@ def create_links_cy(sid_denoiser_tree, settings: SID_Settings):
 
     sid_tree.outputs.new("NodeSocketColor", "Denoised Image")
 
-    if settings.use_mlEXR:
-        sid_tree.outputs.new("NodeSocketColor", "Denoised Diffuse")
-        sid_tree.outputs.new("NodeSocketColor", "Denoised Glossy")
+    sid_tree.outputs.new("NodeSocketColor", "Denoised Diffuse")
+    sid_tree.outputs.new("NodeSocketColor", "Denoised Glossy")
 
-        if settings.use_transmission:
-            sid_tree.outputs.new("NodeSocketColor", "Denoised Transmission")
-            sid_tree.links.new(
-                transmission_denoiser_node.outputs['Denoised Image'],
-                output_node.inputs["Denoised Transmission"]
-                )
-        if settings.use_volumetric:
-            sid_tree.outputs.new("NodeSocketColor", "Denoised Volume")
-            sid_tree.links.new(
-                volume_denoiser_node.outputs['Denoised Image'],
-                output_node.inputs["Denoised Volume"]
-                )
-        if settings.use_emission:
-            sid_tree.outputs.new("NodeSocketColor", "Emission")
-            sid_tree.links.new(
-                emission_dn.outputs[0],
-                output_node.inputs["Emission"]
-                )
-        if settings.use_environment:
-            sid_tree.outputs.new("NodeSocketColor", "Environment")
-            sid_tree.links.new(
-                input_node.outputs['Env'],
-                output_node.inputs["Environment"]
-                )
+    if settings.use_transmission:
+        sid_tree.outputs.new("NodeSocketColor", "Denoised Transmission")
         sid_tree.links.new(
-            diffuse_denoiser_node.outputs['Denoised Image'],
-            output_node.inputs['Denoised Diffuse']
+            transmission_denoiser_node.outputs['Denoised Image'],
+            output_node.inputs["Denoised Transmission"]
             )
+    if settings.use_volumetric:
+        sid_tree.outputs.new("NodeSocketColor", "Denoised Volume")
         sid_tree.links.new(
-            glossy_denoiser_node.outputs['Denoised Image'],
-            output_node.inputs['Denoised Glossy']
+            volume_denoiser_node.outputs['Denoised Image'],
+            output_node.inputs["Denoised Volume"]
             )
-          
+    if settings.use_emission:
+        sid_tree.outputs.new("NodeSocketColor", "Emission")
+        sid_tree.links.new(
+            emission_dn.outputs[0],
+            output_node.inputs["Emission"]
+            )
+    if settings.use_environment:
+        sid_tree.outputs.new("NodeSocketColor", "Environment")
+        sid_tree.links.new(
+            input_node.outputs['Env'],
+            output_node.inputs["Environment"]
+            )
+    sid_tree.links.new(
+        diffuse_denoiser_node.outputs['Denoised Image'],
+        output_node.inputs['Denoised Diffuse']
+        )
+    sid_tree.links.new(
+        glossy_denoiser_node.outputs['Denoised Image'],
+        output_node.inputs['Denoised Glossy']
+        )
+
     sid_tree.links.new(
         combine_node.outputs[0],
         output_node.inputs["Denoised Image"]

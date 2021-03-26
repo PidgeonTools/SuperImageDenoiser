@@ -1,12 +1,13 @@
 import bpy
+from bpy.types import NodeTree
 
 from .. import SID_Settings
 
-def create_links_o(sid_denoiser_tree, settings: SID_Settings):
+def create_links_o(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> NodeTree:
 
     # Creates a super denoiser node group using the provided subgroup
 
-    sid_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
+    sid_tree: NodeTree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
     input_node = sid_tree.nodes.new("NodeGroupInput")
     input_node.location = (-200, 0)
 
@@ -464,63 +465,61 @@ def create_links_o(sid_denoiser_tree, settings: SID_Settings):
 
     sid_tree.outputs.new("NodeSocketColor", "Denoised Image")
 
-    if settings.use_mlEXR:
-        sid_tree.outputs.new("NodeSocketColor", "Denoised Diffuse")
-        sid_tree.outputs.new("NodeSocketColor", "Denoised Reflection")
+    sid_tree.outputs.new("NodeSocketColor", "Denoised Diffuse")
+    sid_tree.outputs.new("NodeSocketColor", "Denoised Reflection")
 
+    sid_tree.links.new(
+        diffuse_denoiser_node.outputs['Denoised Image'],
+        output_node.inputs['Denoised Diffuse']
+        )
+    sid_tree.links.new(
+        reflection_denoiser_node.outputs['Denoised Image'],
+        output_node.inputs['Denoised Reflection']
+        )
 
+    if settings.use_refraction:
+        sid_tree.outputs.new("NodeSocketColor", "Denoised Refraction")
         sid_tree.links.new(
-            diffuse_denoiser_node.outputs['Denoised Image'],
-            output_node.inputs['Denoised Diffuse']
+            refraction_denoiser_node.outputs['Denoised Image'],
+            output_node.inputs["Denoised Refraction"]
             )
+    if settings.use_transmission:
+        sid_tree.outputs.new("NodeSocketColor", "Denoised Transmission")
         sid_tree.links.new(
-            reflection_denoiser_node.outputs['Denoised Image'],
-            output_node.inputs['Denoised Reflection']
+            transmission_denoiser_node.outputs['Denoised Image'],
+            output_node.inputs["Denoised Transmission"]
             )
-
-        if settings.use_refraction:
-            sid_tree.outputs.new("NodeSocketColor", "Denoised Refraction")
-            sid_tree.links.new(
-                refraction_denoiser_node.outputs['Denoised Image'],
-                output_node.inputs["Denoised Refraction"]
-                )
-        if settings.use_transmission:
-            sid_tree.outputs.new("NodeSocketColor", "Denoised Transmission")
-            sid_tree.links.new(
-                transmission_denoiser_node.outputs['Denoised Image'],
-                output_node.inputs["Denoised Transmission"]
-                )
-        if settings.use_sss:
-            sid_tree.outputs.new("NodeSocketColor", "Denoised SSS")
-            sid_tree.links.new(
-                sss_denoiser_node.outputs['Denoised Image'],
-                output_node.inputs["Denoised SSS"]
-                )
-        if settings.use_volumetric:
-            sid_tree.outputs.new("NodeSocketColor", "Denoised Volume")
-            sid_tree.links.new(
-                volume_denoiser_node.outputs['Denoised Image'],
-                output_node.inputs["Denoised Volume"]
-                )
-            sid_tree.outputs.new("NodeSocketColor", "Denoised VolumeEmission")
-            sid_tree.links.new(
-                volume_e_denoiser_node.outputs['Denoised Image'],
-                output_node.inputs["Denoised VolumeEmission"]
-                )
-
-        if settings.use_emission:
-            sid_tree.outputs.new("NodeSocketColor", "Denoised Emission")
-            sid_tree.links.new(
-                emission_dn.outputs[0],
-                output_node.inputs["Denoised Emission"]
-                )
-
-        sid_tree.outputs.new("NodeSocketColor", "Bad Pass")
+    if settings.use_sss:
+        sid_tree.outputs.new("NodeSocketColor", "Denoised SSS")
         sid_tree.links.new(
-            sub_image_emit.outputs['Image'],
-            output_node.inputs["Bad Pass"]
+            sss_denoiser_node.outputs['Denoised Image'],
+            output_node.inputs["Denoised SSS"]
             )
-            
+    if settings.use_volumetric:
+        sid_tree.outputs.new("NodeSocketColor", "Denoised Volume")
+        sid_tree.links.new(
+            volume_denoiser_node.outputs['Denoised Image'],
+            output_node.inputs["Denoised Volume"]
+            )
+        sid_tree.outputs.new("NodeSocketColor", "Denoised VolumeEmission")
+        sid_tree.links.new(
+            volume_e_denoiser_node.outputs['Denoised Image'],
+            output_node.inputs["Denoised VolumeEmission"]
+            )
+
+    if settings.use_emission:
+        sid_tree.outputs.new("NodeSocketColor", "Denoised Emission")
+        sid_tree.links.new(
+            emission_dn.outputs[0],
+            output_node.inputs["Denoised Emission"]
+            )
+
+    sid_tree.outputs.new("NodeSocketColor", "Bad Pass")
+    sid_tree.links.new(
+        sub_image_emit.outputs['Image'],
+        output_node.inputs["Bad Pass"]
+        )
+
     sid_tree.links.new(
         combine_node.outputs[0],
         output_node.inputs["Denoised Image"]
@@ -544,5 +543,6 @@ def create_links_o(sid_denoiser_tree, settings: SID_Settings):
     sid_tree.links.new(
         final_dn.outputs[0],
         seperate_node.inputs[0]
-        )  
+        )
+
     return sid_tree

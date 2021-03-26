@@ -1,14 +1,16 @@
 import bpy
+from bpy.types import NodeTree
 
 from .. import SID_Settings
 
 def create_Octane_group(
-        standard_denoiser_tree,
-        high_denoiser_tree,
-        super_denoiser_tree,
+        standard_denoiser_tree: NodeTree,
+        high_denoiser_tree: NodeTree,
+        super_denoiser_tree: NodeTree,
         settings: SID_Settings
-        ):
-    sid_super_group = bpy.data.node_groups.new(
+        ) -> NodeTree:
+
+    sid_super_group: NodeTree = bpy.data.node_groups.new(
         type='CompositorNodeTree',
         name=".SuperImageDenoiser"
         )
@@ -40,21 +42,20 @@ def create_Octane_group(
     sid_super_group.outputs.new("NodeSocketColor", "High Quality")
 
 
-    if settings.use_mlEXR:
-        sid_super_group.outputs.new("NodeSocketColor", "DN Diffuse")
-        sid_super_group.outputs.new("NodeSocketColor", 'DN Reflection')
-        if settings.use_refraction:
-            sid_super_group.outputs.new("NodeSocketColor", 'DN Refraction')
-        if settings.use_transmission:
-            sid_super_group.outputs.new("NodeSocketColor", 'DN Transmission')
-        if settings.use_sss:
-            sid_super_group.outputs.new("NodeSocketColor", 'DN SSS')
-        if settings.use_emission:
-            sid_super_group.outputs.new("NodeSocketColor", 'Emission')
-        if settings.use_volumetric:
-            sid_super_group.outputs.new("NodeSocketColor", 'DN Volume')
-            sid_super_group.outputs.new("NodeSocketColor", 'DN VolumeEmission')
-        sid_super_group.outputs.new("NodeSocketColor", 'Bad Pass')
+    sid_super_group.outputs.new("NodeSocketColor", "DN Diffuse")
+    sid_super_group.outputs.new("NodeSocketColor", 'DN Reflection')
+    if settings.use_refraction:
+        sid_super_group.outputs.new("NodeSocketColor", 'DN Refraction')
+    if settings.use_transmission:
+        sid_super_group.outputs.new("NodeSocketColor", 'DN Transmission')
+    if settings.use_sss:
+        sid_super_group.outputs.new("NodeSocketColor", 'DN SSS')
+    if settings.use_emission:
+        sid_super_group.outputs.new("NodeSocketColor", 'Emission')
+    if settings.use_volumetric:
+        sid_super_group.outputs.new("NodeSocketColor", 'DN Volume')
+        sid_super_group.outputs.new("NodeSocketColor", 'DN VolumeEmission')
+    sid_super_group.outputs.new("NodeSocketColor", 'Bad Pass')
 
 
     standard_denoiser_node = sid_super_group.nodes.new("CompositorNodeGroup")
@@ -126,7 +127,7 @@ def create_Octane_group(
         output_node.inputs['High Quality']
         )
 
-    if settings.use_mlEXR and settings.quality != 'STANDARD':
+    if settings.quality != 'STANDARD':
 
         if settings.quality == "HIGH":
             denoiser_type = high_denoiser_node
@@ -176,4 +177,5 @@ def create_Octane_group(
             denoiser_type.outputs['Bad Pass'],
             output_node.inputs['Bad Pass']
         )
+
     return sid_super_group

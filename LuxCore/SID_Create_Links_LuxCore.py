@@ -1,13 +1,14 @@
 import bpy
+from bpy.types import NodeTree
 
 from .. import SID_Settings
 
-def create_links_lc(sid_denoiser_tree, settings: SID_Settings):
+def create_links_lc(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> NodeTree:
 
 
     # Creates a super denoiser node group using the provided subgroup
 
-    sid_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
+    sid_tree: NodeTree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
     input_node = sid_tree.nodes.new("NodeGroupInput")
     input_node.location = (-200, 0)
 
@@ -366,5 +367,6 @@ def create_links_lc(sid_denoiser_tree, settings: SID_Settings):
     sid_tree.links.new(
         final_dn.outputs[0],
         seperate_node.inputs[0]
-        )  
+        )
+
     return sid_tree

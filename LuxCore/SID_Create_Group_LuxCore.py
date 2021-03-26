@@ -1,15 +1,16 @@
 import bpy
+from bpy.types import NodeTree
 
 from .. import SID_Settings
 
 def create_LuxCore_group(
-        standard_denoiser_tree,
-        high_denoiser_tree,
-        super_denoiser_tree,
+        standard_denoiser_tree: NodeTree,
+        high_denoiser_tree: NodeTree,
+        super_denoiser_tree: NodeTree,
         settings: SID_Settings
-        ):
+        ) -> NodeTree:
 
-    sid_super_group = bpy.data.node_groups.new(
+    sid_super_group: NodeTree = bpy.data.node_groups.new(
         type='CompositorNodeTree',
         name=".SuperImageDenoiser"
         )
@@ -37,15 +38,14 @@ def create_LuxCore_group(
     sid_super_group.outputs.new("NodeSocketColor", "SUPER Quality")
 
 
-    if settings.use_mlEXR:
-        sid_super_group.outputs.new("NodeSocketColor", "DN Diffuse")
-        sid_super_group.outputs.new("NodeSocketColor", 'DN Glossy')
-        if settings.use_transmission:
-            sid_super_group.outputs.new("NodeSocketColor", 'DN Transmission')
-        if settings.use_emission:
-            sid_super_group.outputs.new("NodeSocketColor", 'Emission')
-        if settings.use_caustics:
-            sid_super_group.outputs.new("NodeSocketColor", 'DN Caustics')
+    sid_super_group.outputs.new("NodeSocketColor", "DN Diffuse")
+    sid_super_group.outputs.new("NodeSocketColor", 'DN Glossy')
+    if settings.use_transmission:
+        sid_super_group.outputs.new("NodeSocketColor", 'DN Transmission')
+    if settings.use_emission:
+        sid_super_group.outputs.new("NodeSocketColor", 'Emission')
+    if settings.use_caustics:
+        sid_super_group.outputs.new("NodeSocketColor", 'DN Caustics')
 
 
 
@@ -151,4 +151,5 @@ def create_LuxCore_group(
                 denoiser_type.outputs['Denoised Caustics'],
                 output_node.inputs['DN Caustics']
             )
+
     return sid_super_group

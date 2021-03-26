@@ -1,11 +1,12 @@
 import bpy
+from bpy.types import NodeTree
 
 from . import SID_Settings
 from .Cycles.SID_Create_Links_Cycles import create_links_cy
 from .LuxCore.SID_Create_Links_LuxCore import create_links_lc
 from .Octane.SID_Create_Links_Octane import create_links_o
 
-def create_sid_super_denoiser_group(sid_denoiser_tree, settings: SID_Settings):
+def create_sid_super_denoiser_group(sid_denoiser_tree: NodeTree, settings: SID_Settings):
 
     RenderEngine = bpy.context.scene.render.engine
 

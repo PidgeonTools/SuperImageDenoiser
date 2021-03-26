@@ -1,9 +1,10 @@
 import bpy
+from bpy.types import NodeTree
 
-def create_sid_denoiser_standard():
+def create_sid_denoiser_standard() -> NodeTree:
     # Create standard quality denoiser node group
 
-    sid_tree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
+    sid_tree: NodeTree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
     input_node = sid_tree.nodes.new("NodeGroupInput")
     input_node.location = (-200, 0)
 
