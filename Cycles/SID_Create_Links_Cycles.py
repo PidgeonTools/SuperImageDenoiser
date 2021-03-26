@@ -108,6 +108,15 @@ def create_links_cy(sid_denoiser_tree, settings: SID_Settings):
             input_node.outputs['TransCol'],
             transmission_denoiser_node.inputs['Color']
             )
+        sid_tree.links.new(
+            input_node.outputs['Denoising Normal'],
+            glossy_denoiser_node.inputs['Denoising Normal']
+            )
+        sid_tree.links.new(
+            input_node.outputs['Denoising Albedo'],
+            glossy_denoiser_node.inputs['Denoising Albedo']
+            )
+
 
 
     ##VOLUMES##
