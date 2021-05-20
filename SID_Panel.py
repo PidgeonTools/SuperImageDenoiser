@@ -27,6 +27,9 @@ class SID_PT_Panel(Panel):
         view_layer = context.view_layer
         cycles_view_layer = view_layer.cycles
 
+        # do we have to use the old layout engine?
+        legacy_layout = bpy.app.version < (2, 90)
+
         # currently rendering noisy frames?
         is_rendering = denoise_render_status.is_rendering
         # currently denoising?
@@ -97,7 +100,7 @@ class SID_PT_Panel(Panel):
             elif settings.quality == 'SUPER':
                 if RenderEngine == 'octane':
                     quality.label(
-                        text="Renderrer does not support super quality.", icon='INFO'
+                        text="Renderer does not support super quality.", icon='INFO'
                         )
                     quality.label(
                         text="       Will use high quality setting instead"
@@ -118,7 +121,8 @@ class SID_PT_Panel(Panel):
                     )
                 
                 subpasses = passes.row(align=True)
-                subpasses
+                subpasses.use_property_split = False
+
                 ##############
                 ### CYCLES ###
                 ##############
@@ -240,8 +244,8 @@ class SID_PT_Panel(Panel):
             fileio.prop(settings, "outputdir", text="Clean EXR images")
             fileio.separator()
 
-            col = fileio.column(heading="Existing Files")
-            col.prop(scene.render, "use_overwrite", text="Overwrite")
+            col = fileio.column(align=True)
+            col.prop(scene.render, "use_overwrite", text="Overwrite existing files")
             layout.separator()
 
             tdrender = layout.column(align=True)
@@ -269,15 +273,39 @@ class SID_PT_Panel(Panel):
             tdsettings = layout.column()
             tdsettings.active = panel_active and (cycles_view_layer.use_denoising or cycles_view_layer.denoising_store_passes)
 
-            row = tdsettings.row(heading="Diffuse", align=True)
+            if legacy_layout:
+                split = tdsettings.split(factor=0.5)
+                col = split.column()
+                col.alignment = 'RIGHT'
+                col.label(text="Diffuse")
+                row = split.row(align=True)
+                row.use_property_split = False
+            else:
+                row = tdsettings.row(heading="Diffuse", align=True)
             row.prop(cycles_view_layer, "denoising_diffuse_direct", text="Direct", toggle=True)
             row.prop(cycles_view_layer, "denoising_diffuse_indirect", text="Indirect", toggle=True)
 
-            row = tdsettings.row(heading="Glossy", align=True)
+            if legacy_layout:
+                split = tdsettings.split(factor=0.5)
+                col = split.column()
+                col.alignment = 'RIGHT'
+                col.label(text="Glossy")
+                row = split.row(align=True)
+                row.use_property_split = False
+            else:
+                row = tdsettings.row(heading="Glossy", align=True)
             row.prop(cycles_view_layer, "denoising_glossy_direct", text="Direct", toggle=True)
             row.prop(cycles_view_layer, "denoising_glossy_indirect", text="Indirect", toggle=True)
 
-            row = tdsettings.row(heading="Transmission", align=True)
+            if legacy_layout:
+                split = tdsettings.split(factor=0.5)
+                col = split.column()
+                col.alignment = 'RIGHT'
+                col.label(text="Transmission")
+                row = split.row(align=True)
+                row.use_property_split = False
+            else:
+                row = tdsettings.row(heading="Glossy", align=True)
             row.prop(cycles_view_layer, "denoising_transmission_direct", text="Direct", toggle=True)
             row.prop(cycles_view_layer, "denoising_transmission_indirect", text="Indirect", toggle=True)
 
