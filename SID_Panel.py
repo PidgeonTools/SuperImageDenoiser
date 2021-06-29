@@ -321,3 +321,8 @@ class SID_PT_Panel(Panel):
             else:
                 tddenoise.active = panel_active
                 tddenoise.operator("object.temporaldenoise_denoise", icon='SHADERFX')
+        
+        layout.separator()
+        col = layout.column()
+        op = col.operator("wm.url_open", text="Support", icon="URL")
+        op.url = "https://discord.gg/cnFdGQP"
