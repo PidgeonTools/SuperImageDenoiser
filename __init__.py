@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Super Image Denoiser (SID)",
     "author": "Kevin Lorengel, Chris Bond (Kamikaze)",
-    "version": (2, 91, 1),
-    "blender": (2, 83, 0),
+    "version": (3, 0, 0),
+    "blender": (2, 92, 0),
     "location": "Properties > Render > Create Super Denoiser",
     "description": "SID denoises your renders near-perfectly, with only one click!",
     "warning": "",
@@ -29,6 +29,9 @@ from .LuxCore.SID_Create_Links_LuxCore import create_links_lc
 #Octane
 from .Octane.SID_QualityHigh_Octane import create_sid_denoiser_high_oc
 from .Octane.SID_Create_Links_Octane import create_links_o
+#Renderman
+from .Renderman.SID_QualityHigh_Renderman import create_sid_denoiser_high_rm
+from .Renderman.SID_Create_Links_Renderman import create_links_rm
 
 from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
 from .SID_Panel import SID_PT_Panel
@@ -46,32 +49,32 @@ class DemoPreferences(bpy.types.AddonPreferences):
 
     # addon updater preferences
 
-    auto_check_update = bpy.props.BoolProperty(
+    auto_check_update : bpy.props.BoolProperty(
         name="Auto-check for Update",
         description="If enabled, auto-check for updates using an interval",
         default=True,
         )
-    updater_intrval_months = bpy.props.IntProperty(
+    updater_intrval_months : bpy.props.IntProperty(
         name='Months',
         description="Number of months between checking for updates",
         default=0,
         min=0
         )
-    updater_intrval_days = bpy.props.IntProperty(
+    updater_intrval_days : bpy.props.IntProperty(
         name='Days',
         description="Number of days between checking for updates",
         default=7,
         min=0,
         max=31
         )
-    updater_intrval_hours = bpy.props.IntProperty(
+    updater_intrval_hours : bpy.props.IntProperty(
         name='Hours',
         description="Number of hours between checking for updates",
         default=0,
         min=0,
         max=23
         )
-    updater_intrval_minutes = bpy.props.IntProperty(
+    updater_intrval_minutes : bpy.props.IntProperty(
         name='Minutes',
         description="Number of minutes between checking for updates",
         default=0,
