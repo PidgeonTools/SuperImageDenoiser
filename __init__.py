@@ -49,38 +49,38 @@ class DemoPreferences(bpy.types.AddonPreferences):
 
     # addon updater preferences
 
-    auto_check_update : bpy.props.BoolProperty(
+    auto_check_update: bpy.props.BoolProperty(
         name="Auto-check for Update",
         description="If enabled, auto-check for updates using an interval",
         default=True,
-        )
-    updater_intrval_months : bpy.props.IntProperty(
+    )
+    updater_intrval_months: bpy.props.IntProperty(
         name='Months',
         description="Number of months between checking for updates",
         default=0,
         min=0
-        )
-    updater_intrval_days : bpy.props.IntProperty(
+    )
+    updater_intrval_days: bpy.props.IntProperty(
         name='Days',
         description="Number of days between checking for updates",
         default=7,
         min=0,
         max=31
-        )
-    updater_intrval_hours : bpy.props.IntProperty(
+    )
+    updater_intrval_hours: bpy.props.IntProperty(
         name='Hours',
         description="Number of hours between checking for updates",
         default=0,
         min=0,
         max=23
-        )
-    updater_intrval_minutes : bpy.props.IntProperty(
+    )
+    updater_intrval_minutes: bpy.props.IntProperty(
         name='Minutes',
         description="Number of minutes between checking for updates",
         default=0,
         min=0,
         max=59
-        )
+    )
 
     def draw(self, context):
         layout = self.layout
@@ -114,8 +114,9 @@ classes = (
     TD_OT_StopRender,
     TD_OT_Denoise,
     TD_OT_StopDenoise,
-     DemoPreferences
+    DemoPreferences
 )
+
 
 @persistent
 def load_handler(dummy):
@@ -125,6 +126,7 @@ def load_handler(dummy):
     except:
         pass
 
+
 def register():
     # addon updater code and configurations
     # in case of broken version, try to register the updater first
@@ -133,7 +135,7 @@ def register():
 
     # register the example panel, to show updater buttons
     for cls in classes:
-        addon_updater_ops.make_annotations(cls) # to avoid blender 2.8 warnings
+        addon_updater_ops.make_annotations(cls)  # to avoid blender 2.8 warnings
         bpy.utils.register_class(cls)
 
     bpy.types.Scene.sid_settings = PointerProperty(type=SID_Settings, options=set())
