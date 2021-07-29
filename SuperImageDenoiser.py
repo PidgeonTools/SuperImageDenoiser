@@ -17,6 +17,10 @@ from .LuxCore.SID_Create_Passes_LuxCore import create_luxcore_passes
 from .Octane.SID_QualityHigh_Octane import create_sid_denoiser_high_oc
 from .Octane.SID_Create_Passes_Octane import create_octane_passes
 
+from .Renderman.SID_QualityHigh_Renderman import create_sid_denoiser_high_rm
+from .Renderman.SID_QualitySuper_Renderman import create_sid_denoiser_super_rm
+from .Renderman.SID_Create_Passes_Renderman import create_renderman_passes
+
 from . import SID_Settings
 
 def find_node(start_node: Node, predicate: Callable[[Node], bool], recursive: bool = False) -> Node:
@@ -110,6 +114,11 @@ class SID_Create(Operator):
                 create_sid_denoiser_high_oc(),
                 settings
                 )
+        elif RenderEngine == 'PRMAN_RENDER':
+            sid_high_tree = create_sid_super_denoiser_group(
+                create_sid_denoiser_high_rm(),
+                settings
+                )
         else:
             sid_high_tree = create_sid_super_denoiser_group(
                 create_sid_denoiser_high_cy(),
@@ -126,11 +135,16 @@ class SID_Create(Operator):
                 create_sid_denoiser_super_lc(),
                 settings
                 )
-#        elif RenderEngine == 'octane':
-#            sid_super_tree = create_sid_super_denoiser_group(
-#                create_sid_denoiser_super_oc(),
-#                settings
-#                )
+        elif RenderEngine == 'octane':
+            sid_super_tree = create_sid_super_denoiser_group(
+                create_sid_denoiser_high_oc(),
+                settings
+                )
+        if RenderEngine == 'PRMAN_RENDER':
+            sid_super_tree = create_sid_super_denoiser_group(
+                create_sid_denoiser_super_rm(),
+                settings
+                )
         else:
             sid_super_tree = create_sid_super_denoiser_group(
                 create_sid_denoiser_super_cy(),
@@ -328,6 +342,13 @@ class SID_Create(Operator):
 
             if RenderEngine == 'octane':
                 create_octane_passes(settings, context, renlayers_node, sid_node, view_layer, output_file_node, connect_sockets)
+                
+            #################
+            ### RENDERMAN ###
+            #################
+
+            if RenderEngine == 'PRMAN_RENDER':
+                create_renderman_passes(settings, context, renlayers_node, sid_node, view_layer, output_file_node, connect_sockets)
 
             viewlayer_displace -= 1000
 

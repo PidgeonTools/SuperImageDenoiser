@@ -63,7 +63,8 @@ class SID_PT_Panel(Panel):
             CompatibleWith = [
                 'CYCLES',
                 'LUXCORE',
-                'octane'
+                'octane',
+                'PRMAN_RENDER'
             ]
 
             if not RenderEngine in CompatibleWith:
@@ -209,6 +210,22 @@ class SID_PT_Panel(Panel):
                         text="Volumetric",
                         toggle=True
                         )
+                #################
+                ### RENDERMAN ###
+                #################
+                if RenderEngine == 'PRMAN_RENDER':
+                    subpasses.prop(
+                        settings,
+                        "use_emission",
+                        text="Emission",
+                        toggle=True
+                        )
+                    subpasses.prop(
+                        settings,
+                        "use_sss",
+                        text="SSS",
+                        toggle=True
+                        )
 
                 layout.separator()
 
@@ -237,6 +254,8 @@ class SID_PT_Panel(Panel):
 
             fileio = layout.column(align=True)
             fileio.active = panel_active
+
+            fileio.label(text="Temporal has inferior denoising quality to SID and will be discontinued!", icon='INFO')
 
             fileio.prop(settings, "inputdir", text="Noisy EXR images")
             fileio.separator()

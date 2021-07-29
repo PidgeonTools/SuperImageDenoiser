@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Super Image Denoiser (SID)",
     "author": "Kevin Lorengel, Chris Bond (Kamikaze)",
-    "version": (2, 92, 0),
-    "blender": (2, 83, 0),
+    "version": (3, 0, 0),
+    "blender": (2, 92, 0),
     "location": "Properties > Render > Create Super Denoiser",
     "description": "SID denoises your renders near-perfectly, with only one click!",
     "warning": "",
@@ -29,6 +29,9 @@ from .LuxCore.SID_Create_Links_LuxCore import create_links_lc
 #Octane
 from .Octane.SID_QualityHigh_Octane import create_sid_denoiser_high_oc
 from .Octane.SID_Create_Links_Octane import create_links_o
+#Renderman
+from .Renderman.SID_QualityHigh_Renderman import create_sid_denoiser_high_rm
+from .Renderman.SID_Create_Links_Renderman import create_links_rm
 
 from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
 from .SID_Panel import SID_PT_Panel
