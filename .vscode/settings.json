@@ -1,9 +1,8 @@
 {
-"python.autoComplete.extraPaths": [
-    "G:/PROGRAMME/Coding/Microsoft VS Code/autocomplete/2.82"
-],
-"python.linting.pylintArgs": [
-    "--init-hook",
-    "import sys; sys.path.append('G:/PROGRAMME/Coding/Microsoft VS Code/autocomplete/2.82')"
-]
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}/../blender_autocomplete/2.93"
+    ],
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/../blender_autocomplete/2.93"
+    ]
 }
