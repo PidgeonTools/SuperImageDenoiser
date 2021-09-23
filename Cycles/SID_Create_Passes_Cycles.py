@@ -17,7 +17,12 @@ def create_cycles_passes(
     scene = context.scene
     ntree = scene.node_tree
 
+    # Turn off built-in OpenImageDenoiser
+    if hasattr(scene.cycles, 'use_denoising'):
+        scene.cycles.use_denoising = False
+
     ##Enable Passes##
+    # Denoising Normal, Denoising Albedo
     view_layer.cycles.denoising_store_passes = True
     # Diffuse
     view_layer.use_pass_diffuse_direct = True
@@ -104,10 +109,17 @@ def create_cycles_passes(
         renlayers_node.outputs["Alpha"],
         sid_node.inputs["Alpha"]
         )
-    ntree.links.new(
-        renlayers_node.outputs["Noisy Image"],
-        sid_node.inputs["Noisy Image"]
-        )
+
+    if not "Noisy Image" in renlayers_node.outputs or not renlayers_node.outputs["Noisy Image"].enabled:
+        ntree.links.new(
+            renlayers_node.outputs["Image"],
+            sid_node.inputs["Noisy Image"]
+            )
+    else:
+        ntree.links.new(
+            renlayers_node.outputs["Noisy Image"],
+            sid_node.inputs["Noisy Image"]
+            )
     ntree.links.new(
         renlayers_node.outputs["Denoising Albedo"],
         sid_node.inputs["Denoising Albedo"]
