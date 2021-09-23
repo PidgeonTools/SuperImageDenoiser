@@ -1,8 +1,10 @@
 import bpy
 from bpy.types import NodeTree
+from .create_denoiser import create_denoiser
 
 def create_sid_denoiser_standard() -> NodeTree:
     # Create standard quality denoiser node group
+    prefilter_quality = 'FAST'
 
     sid_tree: NodeTree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
     input_node = sid_tree.nodes.new("NodeGroupInput")
@@ -16,8 +18,7 @@ def create_sid_denoiser_standard() -> NodeTree:
     sid_tree.inputs.new("NodeSocketColor", "Denoising Albedo")
 
     # Standard Denoiser
-    standard_dn = sid_tree.nodes.new(type="CompositorNodeDenoise")
-    standard_dn.location = (0, 100)
+    standard_dn = create_denoiser(sid_tree, location=(0, 100), prefilter_quality=prefilter_quality)
 
     # Link nodes
     sid_tree.links.new(input_node.outputs['Noisy Image'], standard_dn.inputs[0])

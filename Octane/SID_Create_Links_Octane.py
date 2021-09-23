@@ -2,10 +2,12 @@ import bpy
 from bpy.types import NodeTree
 
 from .. import SID_Settings
+from ..create_denoiser import create_denoiser
 
 def create_links_o(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> NodeTree:
 
     # Creates a super denoiser node group using the provided subgroup
+    prefilter_quality = 'FAST' if settings.quality == 'STANDARD' else 'ACCURATE'
 
     sid_tree: NodeTree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
     input_node = sid_tree.nodes.new("NodeGroupInput")
@@ -156,9 +158,7 @@ def create_links_o(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> NodeT
 
     if settings.use_emission:
         sid_tree.inputs.new("NodeSocketColor", "Emission")
-        emission_dn = sid_tree.nodes.new(type="CompositorNodeDenoise")
-        emission_dn.location = (0, -500)
-        emission_dn.name = emission_dn.label = "Denoise Emission"
+        emission_dn = create_denoiser(sid_tree, "Denoise Emission", (0, -500), prefilter_quality)
 
     #BAD PASS
     add_bad_pass = sid_tree.nodes.new(type="CompositorNodeMixRGB")
@@ -265,13 +265,9 @@ def create_links_o(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> NodeT
         add_emit.name = add_emit.label = "Add Emission"
 
 
-    alpha_dn = sid_tree.nodes.new(type="CompositorNodeDenoise")
-    alpha_dn.location = (2200, -100)
-    alpha_dn.name = alpha_dn.label = "Denoise Alpha"
+    alpha_dn = create_denoiser(sid_tree, "Denoise Alpha", (2200, -100), prefilter_quality)
 
-    final_dn = sid_tree.nodes.new(type="CompositorNodeDenoise")
-    final_dn.location = (2000, 100)
-    final_dn.name = final_dn.label = "Final Denoise"
+    final_dn = create_denoiser(sid_tree, "Final Denoise", (2000, 100), prefilter_quality)
 
     seperate_node = sid_tree.nodes.new(type="CompositorNodeSepRGBA")
     seperate_node.location = (2200, 100)

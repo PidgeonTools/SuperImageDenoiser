@@ -1,8 +1,11 @@
 import bpy
 from bpy.types import NodeTree
+from ..create_denoiser import create_denoiser
 
 def create_sid_denoiser_high_oc() -> NodeTree:
     # Create high quality dual denoiser node group
+    prefilter_quality = 'ACCURATE'
+
     sid_denoiser_tree: NodeTree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".Denoiser.HQ")
     sid_denoiser_input_node = sid_denoiser_tree.nodes.new("NodeGroupInput")
     sid_denoiser_input_node.location = (-200, 0)
@@ -16,8 +19,7 @@ def create_sid_denoiser_high_oc() -> NodeTree:
 
     sid_denoiser_tree.outputs.new("NodeSocketColor", "Denoised Image")
 
-    dn_node = sid_denoiser_tree.nodes.new(type="CompositorNodeDenoise")
-    dn_node.location = (400, 100)
+    dn_node = create_denoiser(sid_denoiser_tree, location=(400, 100), prefilter_quality=prefilter_quality)
 
     # Link nodes
 

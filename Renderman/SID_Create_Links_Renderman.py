@@ -2,11 +2,12 @@ import bpy
 from bpy.types import NodeTree
 
 from .. import SID_Settings
+from ..create_denoiser import create_denoiser
 
 def create_links_rm(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> NodeTree:
 
     # Creates a super denoiser node group using the provided subgroup
-    scene = bpy.context.scene
+    prefilter_quality = 'FAST' if settings.quality == 'STANDARD' else 'ACCURATE'
 
     sid_tree: NodeTree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".SuperImageDenoiser")
     input_node = sid_tree.nodes.new("NodeGroupInput")
@@ -94,9 +95,7 @@ def create_links_rm(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
     add_diffuse_glossy.name = add_diffuse_glossy.label = "Add Glossy"
 
     if settings.use_emission:
-        emission_dn = sid_tree.nodes.new(type="CompositorNodeDenoise")
-        emission_dn.location = (600, 100)
-        emission_dn.name = emission_dn.label = "Denoise Emission"
+        emission_dn = create_denoiser(sid_tree, "Denoise Emission", (600, 100), prefilter_quality)
 
         add_emission = sid_tree.nodes.new(type="CompositorNodeMixRGB")
         add_emission.blend_type = "ADD"
@@ -105,9 +104,7 @@ def create_links_rm(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
         add_emission.name = add_emission.label = "Add Emission"
 
     if settings.use_sss:
-        sss_dn = sid_tree.nodes.new(type="CompositorNodeDenoise")
-        sss_dn.location = (600, 300)
-        sss_dn.name = sss_dn.label = "Denoise SSS"
+        sss_dn = create_denoiser(sid_tree, "Denoise SSS", (600, 300), prefilter_quality)
 
         add_sss = sid_tree.nodes.new(type="CompositorNodeMixRGB")
         add_sss.blend_type = "ADD"
@@ -115,13 +112,9 @@ def create_links_rm(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
         add_sss.location = (800, 500)
         add_sss.name = add_sss.label = "Add SSS"
 
-    alpha_dn = sid_tree.nodes.new(type="CompositorNodeDenoise")
-    alpha_dn.location = (1200, -100)
-    alpha_dn.name = alpha_dn.label = "Denoise Alpha"
+    alpha_dn = create_denoiser(sid_tree, "Denoise Alpha", (1200, -100), prefilter_quality)
 
-    final_dn = sid_tree.nodes.new(type="CompositorNodeDenoise")
-    final_dn.location = (1200, 100)
-    final_dn.name = final_dn.label = "Final Denoise"
+    final_dn = create_denoiser(sid_tree, "Final Denoise", (1200, 100), prefilter_quality)
 
     seperate_node = sid_tree.nodes.new(type="CompositorNodeSepRGBA")
     seperate_node.location = (1400, 100)
