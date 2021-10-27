@@ -233,8 +233,6 @@ class SID_PT_Panel(Panel):
             advanced.label(
                 text="Advanced:"
                 )
-            
-            advanced.operator("object.superimagedenoise", text="Refresh Super Denoiser")
             #advanced.prop(settings,"compositor_reset",text="refresh SID")
 
             layout.separator()
@@ -246,6 +244,8 @@ class SID_PT_Panel(Panel):
                 layout.separator()
 
             layout.operator("object.superimagedenoise", icon='SHADERFX')
+            
+            layout.operator("object.superimagedenoise", text="Refresh Super Denoiser")
 
         else:
             ##### TEMPORAL #####
