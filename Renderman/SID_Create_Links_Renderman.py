@@ -37,23 +37,21 @@ def create_links_rm(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
         input_node.outputs['DiffDir'],
         diffuse_denoiser_node.inputs['Direct']
         )
+
     sid_tree.links.new(
         input_node.outputs['DiffInd'],
         diffuse_denoiser_node.inputs['Indirect']
         )
-    sid_tree.links.new(
-        input_node.outputs['DiffCol'],
-        diffuse_denoiser_node.inputs['Color']
-        )
+
     sid_tree.links.new(
         input_node.outputs['Denoising Normal'],
         diffuse_denoiser_node.inputs['Denoising Normal']
         )
+
     sid_tree.links.new(
         input_node.outputs['DiffCol'],
         diffuse_denoiser_node.inputs['Denoising Albedo']
         )
-
 
     ##GLOSSY##
     sid_tree.inputs.new("NodeSocketColor", "GlossDir")
@@ -68,14 +66,17 @@ def create_links_rm(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
         input_node.outputs['GlossDir'],
         glossy_denoiser_node.inputs['Direct']
         )
+
     sid_tree.links.new(
         input_node.outputs['GlossInd'],
         glossy_denoiser_node.inputs['Indirect']
         )
+
     sid_tree.links.new(
         input_node.outputs['Denoising Normal'],
         glossy_denoiser_node.inputs['Denoising Normal']
         )
+
     sid_tree.links.new(
         input_node.outputs['DiffCol'],
         glossy_denoiser_node.inputs['Denoising Albedo']
@@ -126,10 +127,12 @@ def create_links_rm(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
         diffuse_denoiser_node.outputs['Denoised Image'],
         add_diffuse_glossy.inputs[1]
         )
+
     sid_tree.links.new(
         glossy_denoiser_node.outputs['Denoised Image'],
         add_diffuse_glossy.inputs[2]
         )
+
     prev_output = add_diffuse_glossy.outputs[0]
 
     if settings.use_emission:
@@ -137,14 +140,17 @@ def create_links_rm(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
             prev_output,
             add_emission.inputs[1]
             )
+
         sid_tree.links.new(
             input_node.outputs['Emit'],
             emission_dn.inputs[0]
             )
+
         sid_tree.links.new(
             emission_dn.outputs[0],
             add_emission.inputs[2]
             )
+
         prev_output = add_emission.outputs[0]
 
     if settings.use_sss:
@@ -152,36 +158,44 @@ def create_links_rm(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
             prev_output,
             add_sss.inputs[1]
             )
+
         sid_tree.links.new(
             input_node.outputs['SubsurfaceInd'],
             sss_dn.inputs[0]
             )
+
         sid_tree.links.new(
             sss_dn.outputs[0],
             add_sss.inputs[2]
             )
+
         prev_output = add_sss.outputs[0]
 
     sid_tree.links.new(
         prev_output,
         final_dn.inputs[0]
         )
+
     sid_tree.links.new(
         input_node.outputs['Denoising Normal'],
         final_dn.inputs[1]
         )
+        
     sid_tree.links.new(
         input_node.outputs['Denoising Albedo'],
         final_dn.inputs[2]
         )
+
     sid_tree.links.new(
         input_node.outputs['Alpha'],
         alpha_dn.inputs[0]
         )
+
     sid_tree.links.new(
         input_node.outputs['Denoising Normal'],
         alpha_dn.inputs[1]
         )
+
     sid_tree.links.new(
         input_node.outputs['Denoising Albedo'],
         alpha_dn.inputs[2]
@@ -210,6 +224,7 @@ def create_links_rm(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
         diffuse_denoiser_node.outputs['Denoised Image'],
         output_node.inputs['Denoised Diffuse']
         )
+
     sid_tree.links.new(
         glossy_denoiser_node.outputs['Denoised Image'],
         output_node.inputs['Denoised Glossy']
@@ -219,24 +234,30 @@ def create_links_rm(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
         combine_node.outputs[0],
         output_node.inputs["Denoised Image"]
         )
+
     sid_tree.links.new(
         seperate_node.outputs["R"],
         combine_node.inputs["R"]
         )
+
     sid_tree.links.new(
         seperate_node.outputs["G"],
         combine_node.inputs["G"]
         )
+
     sid_tree.links.new(
         seperate_node.outputs["B"],
         combine_node.inputs["B"]
         )
+
     sid_tree.links.new(
         alpha_dn.outputs[0],
         combine_node.inputs["A"]
         )
+
     sid_tree.links.new(
         final_dn.outputs[0],
         seperate_node.inputs[0]
-        )  
+        ) 
+
     return sid_tree

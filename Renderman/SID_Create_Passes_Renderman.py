@@ -36,14 +36,12 @@ def create_renderman_passes(
         renlayers_node.outputs["DiffDir"],
         sid_node.inputs["DiffDir"]
         )
+        
     ntree.links.new(
         renlayers_node.outputs["DiffInd"],
         sid_node.inputs["DiffInd"]
         )
-    ntree.links.new(
-        renlayers_node.outputs["DiffCol"],
-        sid_node.inputs["DiffCol"]
-        )
+
     ntree.links.new(
         renlayers_node.outputs["DiffCol"],
         sid_node.inputs["Denoising Albedo"]
@@ -53,6 +51,7 @@ def create_renderman_passes(
         renlayers_node.outputs["GlossDir"],
         sid_node.inputs["GlossDir"]
         )
+
     ntree.links.new(
         renlayers_node.outputs["GlossInd"],
         sid_node.inputs["GlossInd"]

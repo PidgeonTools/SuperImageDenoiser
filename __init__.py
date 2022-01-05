@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Super Image Denoiser (SID)",
     "author": "Kevin Lorengel, Chris Bond (Kamikaze)",
-    "version": (3, 1, 0),
-    "blender": (2, 83, 0),
+    "version": (3, 1, 1),
+    "blender": (3, 0, 0),
     "location": "Properties > Render > Create Super Denoiser",
     "description": "SID denoises your renders near-perfectly, with only one click!",
     "warning": "",
@@ -34,7 +34,7 @@ from .Renderman.SID_QualityHigh_Renderman import create_sid_denoiser_high_rm
 from .Renderman.SID_Create_Links_Renderman import create_links_rm
 
 from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
-from .SID_Panel import SID_PT_Panel
+from .SID_Panel import SID_PT_SID_Panel, SID_PT_SOCIALS_Panel
 
 from .SID_Temporal import (
     TD_OT_Render,
@@ -108,7 +108,8 @@ classes = (
     SID_DenoiseRenderStatus,
     SID_TemporalDenoiserStatus,
     SID_Settings,
-    SID_PT_Panel,
+    SID_PT_SID_Panel,
+    SID_PT_SOCIALS_Panel,
     SID_Create,
     TD_OT_Render,
     TD_OT_StopRender,

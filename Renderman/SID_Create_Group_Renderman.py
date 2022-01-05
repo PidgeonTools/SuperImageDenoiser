@@ -83,7 +83,6 @@ def create_renderman_group(
         "Alpha",
         "DiffDir",
         "DiffInd",
-        "DiffCol",
         "GlossDir",
         "GlossInd",
     ]
@@ -113,10 +112,12 @@ def create_renderman_group(
         standard_denoiser_node.outputs['Denoised Image'],
         output_node.inputs['Standard Quality']
         )
+        
     sid_super_group.links.new(
         high_denoiser_node.outputs['Denoised Image'],
         output_node.inputs['High Quality']
         )
+
     sid_super_group.links.new(
         super_denoiser_node.outputs['Denoised Image'],
         output_node.inputs['SUPER Quality']
