@@ -11,6 +11,7 @@ ICON_DIR_NAME = "icons"
 
 class IconManager:
     def __init__(self, additional_paths: typing.Optional[typing.List[str]] = None):
+        import bpy.utils.previews
         self.icon_previews = bpy.utils.previews.new()
         self.additional_paths = additional_paths if additional_paths is not None else []
         self.load_all()
