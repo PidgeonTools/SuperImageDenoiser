@@ -9,6 +9,8 @@ from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDen
 from typing import List, NamedTuple
 
 
+is_temporal_supported = bpy.app.version < (3, 0, 0)
+
 # disable uneeded passes for better performance
 
 class SavedRenderSettings(NamedTuple):
@@ -189,6 +191,8 @@ class TD_OT_Render(Operator):
 
     @classmethod
     def poll(cls, context: Context):
+        if not is_temporal_supported: return False
+
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
         denoise_render_status: SID_DenoiseRenderStatus = settings.denoise_render_status
@@ -374,6 +378,8 @@ class TD_OT_Denoise(Operator):
 
     @classmethod
     def poll(cls, context: Context):
+        if not is_temporal_supported: return False
+
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
         denoise_render_status: SID_DenoiseRenderStatus = settings.denoise_render_status

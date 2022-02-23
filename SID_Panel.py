@@ -6,6 +6,7 @@ from bpy.types import (
     Panel,
 )
 from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
+from .SID_Temporal import is_temporal_supported
 
 ICON_DIR_NAME = "icons"
 
@@ -90,12 +91,13 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
         #######################
         ### DECIDE DENOISER ###
         #######################
-        
-        if RenderEngine == "CYCLES" and bpy.app.version < (3,0,0):
-            denoiser_type = layout.column(align=True)
-            denoiser_type.active = panel_active
+        denoiser_type = settings.denoiser_type if is_temporal_supported else "SID"
 
-            denoiser_type.prop(
+        if RenderEngine == "CYCLES" and is_temporal_supported:
+            denoiser_type_col = layout.column(align=True)
+            denoiser_type_col.active = panel_active
+
+            denoiser_type_col.prop(
                 settings,
                 "denoiser_type",
                 expand=True,
@@ -104,9 +106,13 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
 
             layout.separator()
         else:
+            # Temporal is not supported
+            # - maybe because the Render Engine is not compatible (only Cycles)
+            # - maybe because the Blender version is not compatible (removed from 3.0+)
+            # so don't show the option to use it
             denoiser_type = "SID"
 
-        if settings.denoiser_type == "SID":
+        if denoiser_type == "SID":
 
             CompatibleWith = [
                 'CYCLES',
@@ -124,6 +130,9 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
                     text="       Please change the render engine to a compatible one."
                     )
                 layout.separator()
+
+                # don't draw any more panel settings
+                return
 
             quality = layout.column(align=True)
             quality.prop(
@@ -292,7 +301,7 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             
             layout.operator("object.superimagedenoise", text="Refresh Super Denoiser", icon='FILE_REFRESH')
 
-        else:
+        elif denoiser_type == "TEMPORAL" and is_temporal_supported:
             ##### TEMPORAL #####
 
             fileio = layout.column(align=True)
