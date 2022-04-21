@@ -8,7 +8,7 @@ from bpy.types import (
 from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
 from .SID_Temporal import is_temporal_supported
 
-ICON_DIR_NAME = "icons"
+ICON_DIR_NAME = "Icons"
 
 class IconManager:
     def __init__(self, additional_paths: typing.Optional[typing.List[str]] = None):
