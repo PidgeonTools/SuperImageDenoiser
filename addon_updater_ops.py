@@ -1283,7 +1283,7 @@ def register(bl_info):
     updater.private_token = None  # "tokenstring"
 
     # choose your own username(all lowercase), must match website (not needed for GitLab)
-    updater.user = "DrachenSeele"
+    updater.user = "pidgeontools"
 
     # choose your own repository, must match git name
     updater.repo = "SuperImageDenoiser"
@@ -1291,7 +1291,7 @@ def register(bl_info):
     # updater.addon = # define at top of module, MUST be done first
 
     # Website for manual addon download, optional but recommended to set
-    updater.website = "https://github.com/DrachenSeele/SuperimageDenoiser/"
+    updater.website = "https://github.com/PidgeonTools/SuperimageDenoiser/"
 
     # Addon subfolder path
     # "sample/path/to/addon"
