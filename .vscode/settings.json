@@ -1,8 +1,0 @@
-{
-    "python.autoComplete.extraPaths": [
-        "${workspaceFolder}/../blender_autocomplete/2.93"
-    ],
-    "python.analysis.extraPaths": [
-        "${workspaceFolder}/../blender_autocomplete/2.93"
-    ]
-}

@@ -1,5 +1,10 @@
+# IDE Settings
+.vscode/
+
+# Run artefacts
 __pycache__
-superimagedenoiser_updater
+*_updater/
+
 
 # Release files
 SuperImageDenoiser
