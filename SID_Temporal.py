@@ -10,6 +10,7 @@ from typing import List, NamedTuple
 
 
 is_temporal_supported = bpy.app.version < (3, 0, 0)
+is_save_buffers_supported = bpy.app.version < (3, 0, 0)
 
 # disable uneeded passes for better performance
 
@@ -57,6 +58,10 @@ def save_render_settings(context: Context, view_layer: ViewLayer):
     scene = context.scene
     render = scene.render
 
+    old_use_save_buffers = False
+    if is_save_buffers_supported:
+        old_use_save_buffers = scene.render.use_save_buffers
+
     return SavedRenderSettings(
         old_view_layer = context.window.view_layer,
         old_pass_im = view_layer.use_pass_combined,
@@ -90,7 +95,7 @@ def save_render_settings(context: Context, view_layer: ViewLayer):
         old_path = scene.render.filepath,
         old_usedenoise = scene.cycles.use_denoising,
         old_denoiser = scene.cycles.denoiser,
-        old_saveBuffers = scene.render.use_save_buffers
+        old_saveBuffers = old_use_save_buffers
     )
 
 def restore_render_settings(
@@ -134,7 +139,9 @@ def restore_render_settings(
     scene.render.filepath = savedsettings.old_path
     scene.cycles.use_denoising = savedsettings.old_usedenoise
     scene.cycles.denoiser = savedsettings.old_denoiser
-    scene.render.use_save_buffers = savedsettings.old_saveBuffers
+
+    if is_save_buffers_supported:
+        scene.render.use_save_buffers = savedsettings.old_saveBuffers
 
 
 def slugify(value: str) -> str:
@@ -337,7 +344,8 @@ class TD_OT_Render(Operator):
         scene.render.filepath = filepath
         scene.render.use_compositing = False
         scene.render.use_sequencer = False
-        scene.render.use_save_buffers = False
+        if is_save_buffers_supported:
+            scene.render.use_save_buffers = False
         # render only this view layer
         scene.render.use_single_layer = True
         context.window.view_layer = view_layer
