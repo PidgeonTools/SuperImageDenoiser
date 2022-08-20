@@ -375,7 +375,7 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
                 row = split.row(align=True)
                 row.use_property_split = False
             else:
-                row = tdsettings.row(heading="Glossy", align=True)
+                row = tdsettings.row(heading="Transmission", align=True)
             row.prop(cycles_view_layer, "denoising_transmission_direct", text="Direct", toggle=True)
             row.prop(cycles_view_layer, "denoising_transmission_indirect", text="Indirect", toggle=True)
 
