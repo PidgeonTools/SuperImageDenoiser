@@ -1,16 +1,16 @@
 import bpy
-import glob
 import os
 import re
 import unicodedata
 from bpy.types import Context, Event, Operator, Scene, Timer, ViewLayer
 from math import ceil, log10
-from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
+from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings
 from typing import List, NamedTuple
 
-
-is_temporal_supported = bpy.app.version < (3, 0, 0)
 is_save_buffers_supported = bpy.app.version < (3, 0, 0)
+is_temporal_nlm_supported = bpy.app.version < (3, 0, 0)
+is_temporal_optix_supported = bpy.app.version >= (3, 1, 0)
+is_temporal_supported = is_temporal_nlm_supported or is_temporal_optix_supported
 
 # disable uneeded passes for better performance
 
@@ -50,7 +50,6 @@ class SavedRenderSettings(NamedTuple):
     old_saveBuffers: bool
 
 class RenderJob(NamedTuple):
-    filepath: str
     view_layer: ViewLayer
 
 
@@ -203,9 +202,8 @@ class TD_OT_Render(Operator):
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
         denoise_render_status: SID_DenoiseRenderStatus = settings.denoise_render_status
-        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
 
-        return not denoise_render_status.is_rendering and not temporal_denoiser_status.is_denoising
+        return not denoise_render_status.is_rendering
 
     def execute(self, context: Context):
         scene = context.scene
@@ -223,22 +221,10 @@ class TD_OT_Render(Operator):
         denoise_render_status.should_stop = False
 
         # Prepare render jobs
-        # number of digits required to represent a decimal number (e.g. 42 -> 2)
-        max_view_layer_digits = ceil(log10(len(scene.view_layers)))
-        layer_counter = 0
-        for view_layer in scene.view_layers:
-            layer_counter += 1
-
-            if not view_layer.use:
-                continue
-
-            # e.g. "1_view-layer_00001.exr" or "01_view-layer_00001.exr", etc.
-            filename = f"{layer_counter:0{max_view_layer_digits}}_{slugify(view_layer.name)}_#####"
-            job = RenderJob(
-                filepath = settings.inputdir + filename,
-                view_layer = view_layer
-            )
-            self.jobs.append(job)
+        job = RenderJob(
+            view_layer = context.view_layer
+        )
+        self.jobs.append(job)
 
         # Attach render callbacks
         bpy.app.handlers.render_pre.append(self.render_pre)
@@ -301,14 +287,13 @@ class TD_OT_Render(Operator):
 
         scene = context.scene
         view_layer = job.view_layer
-        filepath = job.filepath
 
         self.saved_settings = save_render_settings(context, view_layer)
 
         ### Setup scene and view layer ###
         # denoiser
         scene.cycles.use_denoising = False
-        scene.cycles.denoiser = 'NLM'
+        scene.cycles.denoiser = 'OPTIX' if is_temporal_optix_supported else 'NLM'
         # image output
         scene.render.image_settings.file_format = 'OPEN_EXR_MULTILAYER'
         scene.render.image_settings.color_mode = 'RGBA'
@@ -319,7 +304,7 @@ class TD_OT_Render(Operator):
         view_layer.use_pass_z = False
         view_layer.use_pass_mist = False
         view_layer.use_pass_normal = False
-        view_layer.use_pass_vector = False
+        view_layer.use_pass_vector = is_temporal_optix_supported
         view_layer.use_pass_uv = False
         view_layer.cycles.denoising_store_passes = True
         view_layer.use_pass_object_index = False
@@ -341,7 +326,6 @@ class TD_OT_Render(Operator):
         view_layer.use_pass_environment = False
         view_layer.use_pass_shadow = False
         view_layer.use_pass_ambient_occlusion = False
-        scene.render.filepath = filepath
         scene.render.use_compositing = False
         scene.render.use_sequencer = False
         if is_save_buffers_supported:
@@ -378,12 +362,6 @@ class TD_OT_Denoise(Operator):
     bl_label = "Denoise Noisy Frames 2/2"
     bl_description = "Denoises Noisy Frames, step 2 of 2"
 
-    timer: Timer = None
-    stop: bool = False
-    running: bool = False
-    files: List[str] = []
-    saved_settings: SavedRenderSettings = None
-
     @classmethod
     def poll(cls, context: Context):
         if not is_temporal_supported: return False
@@ -391,109 +369,23 @@ class TD_OT_Denoise(Operator):
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
         denoise_render_status: SID_DenoiseRenderStatus = settings.denoise_render_status
-        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
 
-        return not denoise_render_status.is_rendering and not temporal_denoiser_status.is_denoising
+        return not denoise_render_status.is_rendering
 
     def execute(self, context: Context):
-        scene = context.scene
-        view_layer = context.view_layer
-
-        settings: SID_Settings = scene.sid_settings
-        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
-
-        # Reset state
-        self.stop = False
-        self.running = False
-        self.files = []
-        temporal_denoiser_status.is_denoising = False
-        temporal_denoiser_status.should_stop = False
-        temporal_denoiser_status.files_total = 0
-        temporal_denoiser_status.files_done = 0
-        temporal_denoiser_status.files_remaining = 0
-
-        self.saved_settings = save_render_settings(context, view_layer)
-
-        # Prepare list of files to denoise
+        ####denoise###
         try:
-            input_dir = os.path.realpath(bpy.path.abspath(settings.inputdir))
-            print(f"Denoising all files in {input_dir}")
+            denoiser_name = "OptiX" if is_temporal_optix_supported else "NLM"
+            print(f"Running {denoiser_name} Temporal Denoiser, please wait...")
 
-            os.chdir(input_dir)
-            self.files = glob.glob("*.exr")
-        except:
-            # return {'CANCELLED'}
-            raise
+            bpy.ops.cycles.denoise_animation()
 
-        files_total = len(self.files)
-        print(f"{files_total} {'file' if files_total == 1 else 'files'} to denoise")
+            message_text = f"{denoiser_name} Temporal Denoising is finished!"
+            self.report({'INFO'}, message_text)
+            ShowMessageBox(
+                message_text
+            )
 
-        temporal_denoiser_status.files_total = files_total
-        temporal_denoiser_status.files_remaining = files_total
-        temporal_denoiser_status.is_denoising = True
-
-        # Setup timer and modal
-        self.timer = context.window_manager.event_timer_add(0.5, window=context.window)
-        context.window_manager.modal_handler_add(self)
-
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context: Context, event: Event):
-        scene = context.scene
-
-        settings: SID_Settings = scene.sid_settings
-        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
-
-        if event.type == 'ESC':
-            self.stop = True
-
-        elif event.type == 'TIMER':
-            was_cancelled = self.stop or temporal_denoiser_status.should_stop
-
-            if was_cancelled or not self.files:
-                print("\nStopping.")
-
-                # Remove callbacks
-                context.window_manager.event_timer_remove(self.timer)
-
-                temporal_denoiser_status.should_stop = False
-                temporal_denoiser_status.is_denoising = False
-
-                self.cleanup(context)
-
-                if was_cancelled:
-                    return {'CANCELLED'}
-                return {'FINISHED'}
-
-            elif not self.running:
-                file = self.files.pop(0)
-
-                self.denoise_file(scene, file)
-
-                temporal_denoiser_status.files_remaining -= 1
-                temporal_denoiser_status.files_done += 1
-
-        # Allow stop button to cancel rendering rather than this modal
-        return {'PASS_THROUGH'}
-
-    def denoise_file(self, scene: Scene, file: str):
-        settings: SID_Settings = scene.sid_settings
-
-        self.running = True
-
-        # denoiser
-        scene.cycles.use_denoising = False
-        scene.cycles.denoiser = 'NLM'
-
-        try:
-            input_dir = bpy.path.abspath(settings.inputdir)
-            input_file = os.path.realpath(os.path.join(input_dir, file))
-            output_dir = bpy.path.abspath(settings.outputdir)
-            output_file = os.path.realpath(os.path.join(output_dir, file))
-
-            ####denoise###
-            print(input_file + " to " + output_file)
-            bpy.ops.cycles.denoise_animation(input_filepath=input_file, output_filepath=output_file)
         except Exception as err:
             err_text = err.__str__()
             self.report({'ERROR'}, err_text.strip())
@@ -502,24 +394,5 @@ class TD_OT_Denoise(Operator):
                 "An error occurred while Temporal Denoising",
                 'ERROR'
             )
-
-        self.running = False
-
-    def cleanup(self, context: Context):
-        view_layer = context.view_layer
-
-        restore_render_settings(context, self.saved_settings, view_layer)
-
-class TD_OT_StopDenoise(Operator):
-    bl_idname = "object.temporaldenoise_denoise_stop"
-    bl_label = "Stop Temporal Denoising"
-    bl_description = "Stop denoising all frames."
-
-    def execute(self, context: Context):
-        scene = context.scene
-        settings: SID_Settings = scene.sid_settings
-        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
-
-        temporal_denoiser_status.should_stop = True
 
         return {'FINISHED'}

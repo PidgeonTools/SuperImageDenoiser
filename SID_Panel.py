@@ -5,8 +5,8 @@ from bpy.types import (
     Context,
     Panel,
 )
-from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
-from .SID_Temporal import is_temporal_supported
+from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings
+from .SID_Temporal import is_temporal_supported, is_temporal_optix_supported, is_temporal_nlm_supported
 
 ICON_DIR_NAME = "Icons"
 
@@ -71,7 +71,6 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
         denoise_render_status: SID_DenoiseRenderStatus = settings.denoise_render_status
-        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
         RenderEngine = scene.render.engine
         view_layer = context.view_layer
         cycles_view_layer = view_layer.cycles
@@ -81,10 +80,8 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
 
         # currently rendering noisy frames?
         is_rendering = denoise_render_status.is_rendering
-        # currently denoising?
-        is_denoising = temporal_denoiser_status.is_denoising
 
-        panel_active = not is_rendering and not is_denoising
+        panel_active = not is_rendering
 
         layout.use_property_split = True
 
@@ -104,7 +101,6 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
                 text="Denoiser Type"
                 )
 
-            layout.separator()
         else:
             # Temporal is not supported
             # - maybe because the Render Engine is not compatible (only Cycles)
@@ -113,6 +109,7 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             denoiser_type = "SID"
 
         if denoiser_type == "SID":
+            layout.separator()
 
             CompatibleWith = [
                 'CYCLES',
@@ -213,7 +210,7 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
                 ###############
                 ### LUXCORE ###
                 ###############
-                if RenderEngine == 'LUXCORE':   
+                if RenderEngine == 'LUXCORE':
                     subpasses.prop(
                         settings,
                         "use_emission",
@@ -236,7 +233,7 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
                 ##############
                 ### OCTANE ###
                 ##############
-                if RenderEngine == 'octane':    
+                if RenderEngine == 'octane':
                     subpasses.prop(
                         settings,
                         "use_emission",
@@ -290,7 +287,6 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             advanced.label(
                 text="Advanced:"
                 )
-            #advanced.prop(settings,"compositor_reset",text="refresh SID")
             layout.separator()
 
             if settings.quality != "STANDARD":
@@ -304,93 +300,88 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
         elif denoiser_type == "TEMPORAL" and is_temporal_supported:
             ##### TEMPORAL #####
 
-            fileio = layout.column(align=True)
-            fileio.active = panel_active
+            denoiser_col = layout.column(align=True)
+            denoiser_col.active = panel_active
+            denoiser_col.label(text="Temporal usually has inferior denoising quality to SID!", icon='INFO')
+            denoiser_col.separator()
 
-            fileio.label(text="Temporal has inferior denoising quality to SID and will be discontinued!", icon='INFO')
+            if is_temporal_optix_supported:
+                denoiser_col.label(text="Will use OptiX Temporal Denoiser")
+            else:
+                denoiser_col.label(text="Will use NLM Temporal Denoiser")
+            denoiser_col.separator()
 
-            fileio.prop(settings, "inputdir", text="Noisy EXR images")
-            fileio.separator()
+            denoiser_col.label(text="It's recommended to enable Overwrite existing files")
+            denoiser_col.label(text="unless you know what you are doing")
+            denoiser_col.prop(scene.render, "use_overwrite", text="Overwrite existing files")
 
-            fileio.prop(settings, "outputdir", text="Clean EXR images")
-            fileio.separator()
+            if is_temporal_nlm_supported:
+                layout.separator()
 
-            col = fileio.column(align=True)
-            col.prop(scene.render, "use_overwrite", text="Overwrite existing files")
+                tdsettings = layout.row()
+                tdsettings.active = panel_active
+                tdsettings.prop(cycles_view_layer, "denoising_radius", text="Radius")
+                tdsettings.prop(cycles_view_layer, "denoising_neighbor_frames", text="Range")
+
+                tdsettings = layout.column()
+                tdsettings.active = panel_active
+                tdsettings.prop(cycles_view_layer, "denoising_strength", slider=True, text="Strength")
+                tdsettings.prop(cycles_view_layer, "denoising_feature_strength", slider=True, text="Feature Strength")
+                tdsettings.prop(cycles_view_layer, "denoising_relative_pca")
+
+                tdsettings = layout.column()
+                tdsettings.active = panel_active and (cycles_view_layer.use_denoising or cycles_view_layer.denoising_store_passes)
+
+                if legacy_layout:
+                    split = tdsettings.split(factor=0.5)
+                    col = split.column()
+                    col.alignment = 'RIGHT'
+                    col.label(text="Diffuse")
+                    row = split.row(align=True)
+                    row.use_property_split = False
+                else:
+                    row = tdsettings.row(heading="Diffuse", align=True)
+                row.prop(cycles_view_layer, "denoising_diffuse_direct", text="Direct", toggle=True)
+                row.prop(cycles_view_layer, "denoising_diffuse_indirect", text="Indirect", toggle=True)
+
+                if legacy_layout:
+                    split = tdsettings.split(factor=0.5)
+                    col = split.column()
+                    col.alignment = 'RIGHT'
+                    col.label(text="Glossy")
+                    row = split.row(align=True)
+                    row.use_property_split = False
+                else:
+                    row = tdsettings.row(heading="Glossy", align=True)
+                row.prop(cycles_view_layer, "denoising_glossy_direct", text="Direct", toggle=True)
+                row.prop(cycles_view_layer, "denoising_glossy_indirect", text="Indirect", toggle=True)
+
+
+                if legacy_layout:
+                    split = tdsettings.split(factor=0.5)
+                    col = split.column()
+                    col.alignment = 'RIGHT'
+                    col.label(text="Transmission")
+                    row = split.row(align=True)
+                    row.use_property_split = False
+                else:
+                    row = tdsettings.row(heading="Transmission", align=True)
+                row.prop(cycles_view_layer, "denoising_transmission_direct", text="Direct", toggle=True)
+                row.prop(cycles_view_layer, "denoising_transmission_indirect", text="Indirect", toggle=True)
+
             layout.separator()
+
             tdrender = layout.column(align=True)
+            tdrender.active = panel_active
             if is_rendering:
                 tdrender.operator("object.temporaldenoise_render_stop", icon='CANCEL')
             else:
-                tdrender.active = panel_active
                 tdrender.operator("object.temporaldenoise_render", icon='RENDER_ANIMATION')
-
             tdrender.separator()
 
-            tdsettings = layout.row()
-            tdsettings.active = panel_active
-            tdsettings.prop(cycles_view_layer, "denoising_radius", text="Radius")
-            tdsettings.prop(cycles_view_layer, "denoising_neighbor_frames", text="Range")
-
-            tdsettings = layout.column()
-            tdsettings.active = panel_active
-            tdsettings.prop(cycles_view_layer, "denoising_strength", slider=True, text="Strength")
-            tdsettings.prop(cycles_view_layer, "denoising_feature_strength", slider=True, text="Feature Strength")
-            tdsettings.prop(cycles_view_layer, "denoising_relative_pca")
-
-            
-            tdsettings = layout.column()
-            tdsettings.active = panel_active and (cycles_view_layer.use_denoising or cycles_view_layer.denoising_store_passes)
-
-            if legacy_layout:
-                split = tdsettings.split(factor=0.5)
-                col = split.column()
-                col.alignment = 'RIGHT'
-                col.label(text="Diffuse")
-                row = split.row(align=True)
-                row.use_property_split = False
-            else:
-                row = tdsettings.row(heading="Diffuse", align=True)
-            row.prop(cycles_view_layer, "denoising_diffuse_direct", text="Direct", toggle=True)
-            row.prop(cycles_view_layer, "denoising_diffuse_indirect", text="Indirect", toggle=True)
-
-            if legacy_layout:
-                split = tdsettings.split(factor=0.5)
-                col = split.column()
-                col.alignment = 'RIGHT'
-                col.label(text="Glossy")
-                row = split.row(align=True)
-                row.use_property_split = False
-            else:
-                row = tdsettings.row(heading="Glossy", align=True)
-            row.prop(cycles_view_layer, "denoising_glossy_direct", text="Direct", toggle=True)
-            row.prop(cycles_view_layer, "denoising_glossy_indirect", text="Indirect", toggle=True)
-
-
-            if legacy_layout:
-                split = tdsettings.split(factor=0.5)
-                col = split.column()
-                col.alignment = 'RIGHT'
-                col.label(text="Transmission")
-                row = split.row(align=True)
-                row.use_property_split = False
-            else:
-                row = tdsettings.row(heading="Transmission", align=True)
-            row.prop(cycles_view_layer, "denoising_transmission_direct", text="Direct", toggle=True)
-            row.prop(cycles_view_layer, "denoising_transmission_indirect", text="Indirect", toggle=True)
-
-            layout.separator()
-
             tddenoise = layout.column(align=True)
-            tddenoise.active = True
-            if is_denoising:
-                tddenoise.operator("object.temporaldenoise_denoise_stop", icon='CANCEL')
-                tddenoise.separator()
-                tddenoise.label(text=f"{temporal_denoiser_status.files_remaining} files remaining", icon='INFO')
-                tddenoise.prop(temporal_denoiser_status, "percent_complete")
-            else:
-                tddenoise.active = panel_active
-                tddenoise.operator("object.temporaldenoise_denoise", icon='SHADERFX')
+            tddenoise.active = panel_active
+            tddenoise.operator("object.temporaldenoise_denoise", icon='SHADERFX')
 
 class SID_PT_SOCIALS_Panel(SID_PT_Panel, Panel):
     bl_label = "Our Socials"

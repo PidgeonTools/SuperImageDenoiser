@@ -6,13 +6,9 @@ from bpy.types import (
 from bpy.props import (
     BoolProperty,
     EnumProperty,
-    FloatProperty,
-    IntProperty,
     PointerProperty,
     StringProperty
 )
-
-# Classes
 
 
 class SID_DenoiseRenderStatus(PropertyGroup):
@@ -38,50 +34,6 @@ def get_percent_complete(self):
 
 def set_percent_complete(self, value):
     pass
-
-class SID_TemporalDenoiserStatus(PropertyGroup):
-    is_denoising: BoolProperty(
-        name="Denoising",
-        description="Currently denoising",
-        default=False,
-        options=set(), # Not animatable!
-        )
-
-    should_stop: BoolProperty(
-        name="Stop",
-        description="User requested stop",
-        default=False,
-        options=set(), # Not animatable!
-        )
-
-    files_total: IntProperty(
-        name="Total Files",
-        description="Total number of files to denoise",
-        options=set(), # Not animatable!
-        )
-
-    files_done: IntProperty(
-        name="Files Done",
-        description="Number of files denoised",
-        options=set(), # Not animatable!
-        )
-
-    files_remaining: IntProperty(
-        name="Files Remaining",
-        description="Number of files still remaining to denoise",
-        options=set(), # Not animatable!
-        )
-        
-    percent_complete: FloatProperty(
-        name="%",
-        description="Percentage completed of files denoised",
-        subtype='PERCENTAGE',
-        min=0,
-        max=100,
-        options=set(), # Not animatable!
-        get=get_percent_complete,
-        set=set_percent_complete,
-        )
 
 class SID_Settings(PropertyGroup):
 
@@ -132,15 +84,6 @@ class SID_Settings(PropertyGroup):
         name="Noisy Frames",
         default= "",
         description="Noisy EXR Frames will be saved here",
-        subtype='DIR_PATH',
-        maxlen=1024,
-        options=set(), # Not animatable!
-        )
-
-    outputdir: StringProperty(
-        name="Denoised Frames",
-        default= "",
-        description="Clean EXR Frames will be saved here",
         subtype='DIR_PATH',
         maxlen=1024,
         options=set(), # Not animatable!
@@ -208,15 +151,9 @@ class SID_Settings(PropertyGroup):
         description="Enable this if you have Caustics in your Scene",
         options=set(), # Not animatable!
         )
-        
+
     # Temporal denoiser part 1: render noisy frames
     denoise_render_status: PointerProperty(
         type=SID_DenoiseRenderStatus,
-        options=set(), # Not animatable!
-        )
-
-    # Temporal denoiser part 2: denoise animation
-    temporal_denoiser_status: PointerProperty(
-        type=SID_TemporalDenoiserStatus,
         options=set(), # Not animatable!
         )
