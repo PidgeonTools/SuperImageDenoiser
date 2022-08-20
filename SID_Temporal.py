@@ -372,6 +372,22 @@ class TD_OT_Denoise(Operator):
 
         return not denoise_render_status.is_rendering
 
+    def invoke(self, context: Context, event: Event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def draw(self, context: Context):
+        layout = self.layout
+        layout.label(text="Temporal Denoising can take some time.")
+        layout.separator()
+        layout.label(text="Blender will appear to freeze. This is normal; please be patient.")
+        layout.separator()
+        layout.label(text="The noisy frames will be updated in-place, and this operation", icon='ERROR')
+        layout.label(text="CANNOT BE UNDONE. If you want to create a backup of your rendered")
+        layout.label(text="frames first, please do so BEFORE proceeding.")
+        layout.separator()
+        layout.label(text="To proceed with denoising, press [OK]", icon='DOT')
+        layout.label(text="To cancel, click outside this box", icon='DOT')
+
     def execute(self, context: Context):
         ####denoise###
         try:
