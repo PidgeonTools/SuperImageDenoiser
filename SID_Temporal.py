@@ -4,7 +4,7 @@ import re
 import unicodedata
 from bpy.types import Context, Event, Operator, Scene, Timer, ViewLayer
 from math import ceil, log10
-from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings
+from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
 from typing import List, NamedTuple
 
 is_save_buffers_supported = bpy.app.version < (3, 0, 0)
@@ -50,6 +50,7 @@ class SavedRenderSettings(NamedTuple):
     old_saveBuffers: bool
 
 class RenderJob(NamedTuple):
+    filepath: str
     view_layer: ViewLayer
 
 
@@ -142,6 +143,54 @@ def restore_render_settings(
     if is_save_buffers_supported:
         scene.render.use_save_buffers = savedsettings.old_saveBuffers
 
+def setup_render_settings(context: Context, view_layer: ViewLayer, filepath: str):
+    scene = context.scene
+
+    ### Setup scene and view layer ###
+    # denoiser
+    scene.cycles.use_denoising = False
+    scene.cycles.denoiser = 'OPTIX' if is_temporal_optix_supported else 'NLM'
+    # image output
+    scene.render.image_settings.file_format = 'OPEN_EXR_MULTILAYER'
+    scene.render.image_settings.color_mode = 'RGBA'
+    scene.render.image_settings.color_depth = '32'
+    scene.render.image_settings.exr_codec = 'ZIP'
+    # passes
+    view_layer.use_pass_combined = True
+    view_layer.use_pass_z = False
+    view_layer.use_pass_mist = False
+    view_layer.use_pass_normal = False
+    view_layer.use_pass_vector = is_temporal_optix_supported
+    view_layer.use_pass_uv = False
+    view_layer.cycles.denoising_store_passes = True
+    view_layer.use_pass_object_index = False
+    view_layer.use_pass_material_index = False
+    view_layer.cycles.use_pass_debug_render_time = False
+    view_layer.cycles.use_pass_debug_sample_count = False
+    view_layer.use_pass_diffuse_direct = False
+    view_layer.use_pass_diffuse_indirect = False
+    view_layer.use_pass_diffuse_color = False
+    view_layer.use_pass_glossy_direct = False
+    view_layer.use_pass_glossy_indirect = False
+    view_layer.use_pass_glossy_color = False
+    view_layer.use_pass_transmission_direct = False
+    view_layer.use_pass_transmission_indirect = False
+    view_layer.use_pass_transmission_color = False
+    view_layer.cycles.use_pass_volume_direct = False
+    view_layer.cycles.use_pass_volume_indirect = False
+    view_layer.use_pass_emit = False
+    view_layer.use_pass_environment = False
+    view_layer.use_pass_shadow = False
+    view_layer.use_pass_ambient_occlusion = False
+    scene.render.filepath = filepath
+    scene.render.use_compositing = False
+    scene.render.use_sequencer = False
+    if is_save_buffers_supported:
+        scene.render.use_save_buffers = False
+    # render only this view layer
+    scene.render.use_single_layer = True
+    context.window.view_layer = view_layer
+
 
 def slugify(value: str) -> str:
     """
@@ -155,6 +204,32 @@ def slugify(value: str) -> str:
     value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
     value = re.sub(r'[^\w\s-]', '', value.lower())
     return re.sub(r'[-\s]+', '-', value).strip('-_')
+
+def create_jobs(scene: Scene) -> List[RenderJob]:
+    settings: SID_Settings = scene.sid_settings
+
+    jobs: List[RenderJob] = []
+
+    # number of digits required to represent a decimal number (e.g. 42 -> 2)
+    max_view_layer_digits = ceil(log10(len(scene.view_layers)))
+    layer_counter = 0
+    for view_layer in scene.view_layers:
+        layer_counter += 1
+
+        if not view_layer.use:
+            continue
+
+        # e.g. "1_view-layer/00001.exr" or "01_view-layer/00001.exr", etc.
+        view_layer_directory = f"{layer_counter:0{max_view_layer_digits}}_{slugify(view_layer.name)}"
+        filename = "#####"
+        filepath = os.path.join(settings.inputdir, view_layer_directory, filename)
+        job = RenderJob(
+            filepath = filepath,
+            view_layer = view_layer
+        )
+        jobs.append(job)
+
+    return jobs
 
 
 def ShowMessageBox(message: str = "", title = "Information", icon = 'INFO'):
@@ -215,16 +290,15 @@ class TD_OT_Render(Operator):
         self.stop = False
         self.rendering = False
         self.done = False
-        self.jobs = []
-        self.current_job = None
-        denoise_render_status.is_rendering = True
-        denoise_render_status.should_stop = False
 
         # Prepare render jobs
-        job = RenderJob(
-            view_layer = context.view_layer
-        )
-        self.jobs.append(job)
+        self.jobs = create_jobs(scene)
+        self.current_job = None
+
+        denoise_render_status.is_rendering = True
+        denoise_render_status.should_stop = False
+        denoise_render_status.jobs_done = 0
+        denoise_render_status.jobs_remaining = denoise_render_status.jobs_total = len(self.jobs)
 
         # Attach render callbacks
         bpy.app.handlers.render_pre.append(self.render_pre)
@@ -278,6 +352,9 @@ class TD_OT_Render(Operator):
 
                 self.start_job(context, job)
 
+                denoise_render_status.jobs_done += 1
+                denoise_render_status.jobs_remaining -= 1
+
         # Allow stop button to cancel rendering rather than this modal
         return {'PASS_THROUGH'}
 
@@ -287,52 +364,12 @@ class TD_OT_Render(Operator):
 
         scene = context.scene
         view_layer = job.view_layer
+        filepath = job.filepath
 
         self.saved_settings = save_render_settings(context, view_layer)
 
         ### Setup scene and view layer ###
-        # denoiser
-        scene.cycles.use_denoising = False
-        scene.cycles.denoiser = 'OPTIX' if is_temporal_optix_supported else 'NLM'
-        # image output
-        scene.render.image_settings.file_format = 'OPEN_EXR_MULTILAYER'
-        scene.render.image_settings.color_mode = 'RGBA'
-        scene.render.image_settings.color_depth = '32'
-        scene.render.image_settings.exr_codec = 'ZIP'
-        # passes
-        view_layer.use_pass_combined = True
-        view_layer.use_pass_z = False
-        view_layer.use_pass_mist = False
-        view_layer.use_pass_normal = False
-        view_layer.use_pass_vector = is_temporal_optix_supported
-        view_layer.use_pass_uv = False
-        view_layer.cycles.denoising_store_passes = True
-        view_layer.use_pass_object_index = False
-        view_layer.use_pass_material_index = False
-        view_layer.cycles.use_pass_debug_render_time = False
-        view_layer.cycles.use_pass_debug_sample_count = False
-        view_layer.use_pass_diffuse_direct = False
-        view_layer.use_pass_diffuse_indirect = False
-        view_layer.use_pass_diffuse_color = False
-        view_layer.use_pass_glossy_direct = False
-        view_layer.use_pass_glossy_indirect = False
-        view_layer.use_pass_glossy_color = False
-        view_layer.use_pass_transmission_direct = False
-        view_layer.use_pass_transmission_indirect = False
-        view_layer.use_pass_transmission_color = False
-        view_layer.cycles.use_pass_volume_direct = False
-        view_layer.cycles.use_pass_volume_indirect = False
-        view_layer.use_pass_emit = False
-        view_layer.use_pass_environment = False
-        view_layer.use_pass_shadow = False
-        view_layer.use_pass_ambient_occlusion = False
-        scene.render.use_compositing = False
-        scene.render.use_sequencer = False
-        if is_save_buffers_supported:
-            scene.render.use_save_buffers = False
-        # render only this view layer
-        scene.render.use_single_layer = True
-        context.window.view_layer = view_layer
+        setup_render_settings(context, view_layer, filepath)
 
         ### Render ###
         print(f"Rendering View Layer '{view_layer.name}' animation to: {scene.render.filepath}")
@@ -362,15 +399,23 @@ class TD_OT_Denoise(Operator):
     bl_label = "Denoise Noisy Frames 2/2"
     bl_description = "Denoises Noisy Frames, step 2 of 2"
 
+    timer: Timer = None
+    stop: bool = False
+    running: bool = False
+    done: bool = False
+    jobs: List[RenderJob] = []
+    current_job: RenderJob = None
+    saved_settings: SavedRenderSettings = None
+
     @classmethod
     def poll(cls, context: Context):
         if not is_temporal_supported: return False
 
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
-        denoise_render_status: SID_DenoiseRenderStatus = settings.denoise_render_status
+        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
 
-        return not denoise_render_status.is_rendering
+        return not temporal_denoiser_status.is_running
 
     def invoke(self, context: Context, event: Event):
         return context.window_manager.invoke_props_dialog(self, width=400)
@@ -389,20 +434,104 @@ class TD_OT_Denoise(Operator):
         layout.label(text="To cancel, click outside this box", icon='DOT')
 
     def execute(self, context: Context):
-        ####denoise###
+        scene = context.scene
+
+        settings: SID_Settings = scene.sid_settings
+        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
+
+        # Reset state
+        self.stop = False
+        self.running = True
+        self.done = False
+
+        # Prepare denoising jobs
+        self.jobs = create_jobs(scene)
+        self.current_job = None
+
+        temporal_denoiser_status.is_running = True
+        temporal_denoiser_status.should_stop = False
+        temporal_denoiser_status.jobs_done = 0
+        temporal_denoiser_status.jobs_remaining = temporal_denoiser_status.jobs_total = len(self.jobs)
+
+        # Setup timer and modal
+        self.timer = context.window_manager.event_timer_add(0.5, window=context.window)
+        context.window_manager.modal_handler_add(self)
+
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context: Context, event: Event):
+        scene = context.scene
+        settings: SID_Settings = scene.sid_settings
+        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
+
+        if event.type == 'ESC':
+            self.stop = True
+
+        elif event.type == 'TIMER':
+            was_cancelled = self.stop or temporal_denoiser_status.should_stop
+
+            if was_cancelled or not self.jobs:
+                print("\nStopping.")
+                self.running = False
+
+                # Remove callbacks
+                context.window_manager.event_timer_remove(self.timer)
+
+                temporal_denoiser_status.should_stop = False
+                temporal_denoiser_status.is_running = False
+
+                if self.current_job:
+                    self.cleanup_job(context, self.current_job)
+
+                if was_cancelled:
+                    return {'CANCELLED'}
+
+                message_text = "Temporal Denoising is finished!"
+                self.report({'INFO'}, message_text)
+                ShowMessageBox(message_text)
+                return {'FINISHED'}
+
+            elif self.done or not self.current_job:
+                if self.current_job:
+                    self.cleanup_job(context, self.current_job)
+
+                job = self.jobs[0]
+
+                self.start_job(context, job)
+
+                temporal_denoiser_status.jobs_done += 1
+                temporal_denoiser_status.jobs_remaining -= 1
+
+        return {'PASS_THROUGH'}
+
+    def start_job(self, context: Context, job: RenderJob):
+        self.current_job = job
+        self.done = False
+        self.running = True
+
+        scene = context.scene
+        view_layer = job.view_layer
+        filepath = job.filepath
+
+        self.saved_settings = save_render_settings(context, view_layer)
+
+        ### Setup scene and view layer ###
+        setup_render_settings(context, view_layer, filepath)
+
+        ### Denoise ###
         try:
             denoiser_name = "OptiX" if is_temporal_optix_supported else "NLM"
-            print(f"Running {denoiser_name} Temporal Denoiser, please wait...")
+            print(f"Running {denoiser_name} Temporal Denoiser on View Layer '{view_layer.name}' in: \"{scene.render.filepath}\" - please wait...")
 
             bpy.ops.cycles.denoise_animation()
 
-            message_text = f"{denoiser_name} Temporal Denoising is finished!"
-            self.report({'INFO'}, message_text)
-            ShowMessageBox(
-                message_text
-            )
+            self.done = True
+            self.jobs.pop(0)
 
         except Exception as err:
+            # Don't continue
+            self.stop = True
+
             err_text = err.__str__()
             self.report({'ERROR'}, err_text.strip())
             ShowMessageBox(
@@ -410,5 +539,21 @@ class TD_OT_Denoise(Operator):
                 "An error occurred while Temporal Denoising",
                 'ERROR'
             )
+
+    def cleanup_job(self, context: Context, job: RenderJob):
+        restore_render_settings(context, self.saved_settings, job.view_layer)
+
+
+class TD_OT_StopDenoise(Operator):
+    bl_idname = "object.temporaldenoise_denoise_stop"
+    bl_label = "Stop Temporal Denoising"
+    bl_description = "Stop denoising all View Layers"
+
+    def execute(self, context: Context):
+        scene = context.scene
+        settings: SID_Settings = scene.sid_settings
+        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
+
+        temporal_denoiser_status.should_stop = True
 
         return {'FINISHED'}

@@ -5,7 +5,7 @@ from bpy.types import (
     Context,
     Panel,
 )
-from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings
+from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
 from .SID_Temporal import is_temporal_supported, is_temporal_optix_supported, is_temporal_nlm_supported
 
 ICON_DIR_NAME = "Icons"
@@ -71,6 +71,7 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
         denoise_render_status: SID_DenoiseRenderStatus = settings.denoise_render_status
+        temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
         RenderEngine = scene.render.engine
         view_layer = context.view_layer
         cycles_view_layer = view_layer.cycles
@@ -80,8 +81,9 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
 
         # currently rendering noisy frames?
         is_rendering = denoise_render_status.is_rendering
+        is_denoising = temporal_denoiser_status.is_running
 
-        panel_active = not is_rendering
+        panel_active = not is_rendering and not is_denoising
 
         layout.use_property_split = True
 
@@ -311,9 +313,14 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
                 denoiser_col.label(text="Will use NLM Temporal Denoiser")
             denoiser_col.separator()
 
-            denoiser_col.label(text="It's recommended to enable Overwrite existing files")
-            denoiser_col.label(text="unless you know what you are doing")
-            denoiser_col.prop(scene.render, "use_overwrite", text="Overwrite existing files")
+            fileio = layout.column(align=True)
+            fileio.active = panel_active
+            fileio.prop(settings, "inputdir", text="Image directory")
+            fileio.separator()
+
+            fileio.label(text="It's recommended to enable Overwrite existing files")
+            fileio.label(text="unless you know what you are doing")
+            fileio.prop(scene.render, "use_overwrite", text="Overwrite existing files")
 
             if is_temporal_nlm_supported:
                 layout.separator()
@@ -374,6 +381,8 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             tdrender = layout.column(align=True)
             tdrender.active = panel_active
             if is_rendering:
+                tdrender.label(text=f"{denoise_render_status.jobs_done} / {denoise_render_status.jobs_total} View Layers completed", icon='INFO')
+                tdrender.prop(denoise_render_status, "percent_complete")
                 tdrender.operator("object.temporaldenoise_render_stop", icon='CANCEL')
             else:
                 tdrender.operator("object.temporaldenoise_render", icon='RENDER_ANIMATION')
@@ -381,7 +390,14 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
 
             tddenoise = layout.column(align=True)
             tddenoise.active = panel_active
-            tddenoise.operator("object.temporaldenoise_denoise", icon='SHADERFX')
+            if is_denoising:
+                tddenoise.active = True
+                tddenoise.label(text=f"{temporal_denoiser_status.jobs_done} / {temporal_denoiser_status.jobs_total} View Layers completed", icon='INFO')
+                tddenoise.prop(temporal_denoiser_status, "percent_complete")
+                tddenoise.operator("object.temporaldenoise_denoise_stop", icon='CANCEL')
+            else:
+                tddenoise.operator("object.temporaldenoise_denoise", icon='SHADERFX')
+
 
 class SID_PT_SOCIALS_Panel(SID_PT_Panel, Panel):
     bl_label = "Our Socials"

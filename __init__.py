@@ -33,13 +33,14 @@ from .Octane.SID_Create_Links_Octane import create_links_o
 from .Renderman.SID_QualityHigh_Renderman import create_sid_denoiser_high_rm
 from .Renderman.SID_Create_Links_Renderman import create_links_rm
 
-from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings
+from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
 from .SID_Panel import SID_PT_SID_Panel, SID_PT_SOCIALS_Panel
 
 from .SID_Temporal import (
     TD_OT_Render,
     TD_OT_StopRender,
     TD_OT_Denoise,
+    TD_OT_StopDenoise,
     )
 
 from . import addon_updater_ops
@@ -106,6 +107,7 @@ class DemoPreferences(bpy.types.AddonPreferences):
 
 classes = (
     SID_DenoiseRenderStatus,
+    SID_TemporalDenoiserStatus,
     SID_Settings,
     SID_PT_SID_Panel,
     SID_PT_SOCIALS_Panel,
@@ -113,6 +115,7 @@ classes = (
     TD_OT_Render,
     TD_OT_StopRender,
     TD_OT_Denoise,
+    TD_OT_StopDenoise,
     DemoPreferences
 )
 
@@ -121,6 +124,11 @@ classes = (
 def load_handler(dummy):
     try:
         bpy.context.scene.sid_settings.denoise_render_status.is_rendering = False
+    except:
+        pass
+
+    try:
+        bpy.context.scene.sid_settings.temporal_denoiser_status.is_denoising = False
     except:
         pass
 

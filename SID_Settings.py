@@ -6,9 +6,20 @@ from bpy.types import (
 from bpy.props import (
     BoolProperty,
     EnumProperty,
+    FloatProperty,
+    IntProperty,
     PointerProperty,
     StringProperty
 )
+
+
+def get_percent_complete(self):
+    jobs_total = self['jobs_total']
+    jobs_done = self['jobs_done']
+    return 0 if jobs_total == 0 else 100 * jobs_done / jobs_total
+
+def set_percent_complete(self, value):
+    pass
 
 
 class SID_DenoiseRenderStatus(PropertyGroup):
@@ -26,14 +37,80 @@ class SID_DenoiseRenderStatus(PropertyGroup):
         options=set(), # Not animatable!
         )
 
+    jobs_total: IntProperty(
+        name="Total Jobs",
+        description="Total number of jobs to run",
+        options=set(), # Not animatable!
+        )
 
-def get_percent_complete(self):
-    files_total = self['files_total']
-    files_done = self['files_done']
-    return 0 if files_total == 0 else 100 * files_done / files_total
+    jobs_done: IntProperty(
+        name="Jobs Done",
+        description="Number of jobs completed",
+        options=set(), # Not animatable!
+        )
 
-def set_percent_complete(self, value):
-    pass
+    jobs_remaining: IntProperty(
+        name="Jobs Remaining",
+        description="Number of jobs still remaining to complete",
+        options=set(), # Not animatable!
+        )
+
+    percent_complete: FloatProperty(
+        name="%",
+        description="Percentage of jobs completed",
+        subtype='PERCENTAGE',
+        min=0,
+        max=100,
+        options=set(), # Not animatable!
+        get=get_percent_complete,
+        set=set_percent_complete,
+        )
+
+
+class SID_TemporalDenoiserStatus(PropertyGroup):
+    is_running: BoolProperty(
+        name="Denoising",
+        description="A Denoising operation is currently in progress",
+        default=False,
+        options=set(), # Not animatable!
+        )
+
+    should_stop: BoolProperty(
+        name="Stop",
+        description="User requested stop",
+        default=False,
+        options=set(), # Not animatable!
+        )
+
+    jobs_total: IntProperty(
+        name="Total Jobs",
+        description="Total number of jobs to run",
+        options=set(), # Not animatable!
+        )
+
+    jobs_done: IntProperty(
+        name="Jobs Done",
+        description="Number of jobs completed",
+        options=set(), # Not animatable!
+        )
+
+    jobs_remaining: IntProperty(
+        name="Jobs Remaining",
+        description="Number of jobs still remaining to complete",
+        options=set(), # Not animatable!
+        )
+
+    percent_complete: FloatProperty(
+        name="%",
+        description="Percentage of jobs completed",
+        subtype='PERCENTAGE',
+        min=0,
+        max=100,
+        options=set(), # Not animatable!
+        get=get_percent_complete,
+        set=set_percent_complete,
+        )
+
 
 class SID_Settings(PropertyGroup):
 
@@ -155,5 +232,11 @@ class SID_Settings(PropertyGroup):
     # Temporal denoiser part 1: render noisy frames
     denoise_render_status: PointerProperty(
         type=SID_DenoiseRenderStatus,
+        options=set(), # Not animatable!
+        )
+
+    # Temporal denoiser part 2: denoise animation
+    temporal_denoiser_status: PointerProperty(
+        type=SID_TemporalDenoiserStatus,
         options=set(), # Not animatable!
         )
