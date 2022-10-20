@@ -7,6 +7,8 @@ bl_info = {
     "description": "SID denoises your renders near-perfectly, with only one click!",
     "warning": "",
     "wiki_url": "https://discord.gg/cnFdGQP",
+    "endpoint_url": "https://raw.githubusercontent.com/PidgeonTools/SAM-Endpoints/main/SuperImageDenoiser.json",
+    "tracker_url": "https://github.com/PidgeonTools/SuperImageDenoiser/issues",
     "category": "Compositor",
 }
 import bpy
