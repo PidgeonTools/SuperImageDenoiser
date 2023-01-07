@@ -123,6 +123,11 @@ class SID_Settings(PropertyGroup):
                 'Super Image Denoiser'
             ),
             (
+                'SID TEMPORAL',
+                'SID Temporal',
+                'Temporal Super Image Denoiser'
+            ),
+            (
                 'TEMPORAL',
                 'Temporal',
                 'Temporal Animation Denoiser'

@@ -15,28 +15,22 @@ import bpy
 from bpy.app.handlers import persistent
 from bpy.props import (
     PointerProperty,
-)
-from .SuperImageDenoiser import SID_Create
-from .SID_Create_DenoiserGroup import create_sid_super_denoiser_group
-from .SID_Create_Group import create_sid_super_group
+    )
+from .SuperImageDenoiser import (
+    SID_Create,
+    SID_CreateTemporal
+    )
 
-#Cycles
-from .Cycles.SID_QualityHigh_Cycles import create_sid_denoiser_high_cy
-from .Cycles.SID_QualitySuper_Cycles import create_sid_denoiser_super_cy
-from .Cycles.SID_Create_Links_Cycles import create_links_cy
-#Luxcore
-from .LuxCore.SID_QualityHigh_LuxCore import create_sid_denoiser_high_lc
-from .LuxCore.SID_QualitySuper_LuxCore import create_sid_denoiser_super_lc
-from .LuxCore.SID_Create_Links_LuxCore import create_links_lc
-#Octane
-from .Octane.SID_QualityHigh_Octane import create_sid_denoiser_high_oc
-from .Octane.SID_Create_Links_Octane import create_links_o
-#Renderman
-from .Renderman.SID_QualityHigh_Renderman import create_sid_denoiser_high_rm
-from .Renderman.SID_Create_Links_Renderman import create_links_rm
+from .SID_Settings import (
+    SID_DenoiseRenderStatus,
+    SID_Settings,
+    SID_TemporalDenoiserStatus
+    )
 
-from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
-from .SID_Panel import SID_PT_SID_Panel, SID_PT_SOCIALS_Panel
+from .SID_Panel import (
+    SID_PT_SID_Panel,
+    SID_PT_SOCIALS_Panel
+    )
 
 from .SID_Temporal import (
     TD_OT_Render,
@@ -114,6 +108,7 @@ classes = (
     SID_PT_SID_Panel,
     SID_PT_SOCIALS_Panel,
     SID_Create,
+    SID_CreateTemporal,
     TD_OT_Render,
     TD_OT_StopRender,
     TD_OT_Denoise,

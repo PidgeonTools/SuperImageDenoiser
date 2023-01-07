@@ -299,6 +299,117 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             
             layout.operator("object.superimagedenoise", text="Refresh Super Denoiser", icon='FILE_REFRESH')
 
+        elif denoiser_type == "SID TEMPORAL":
+            layout.separator()
+
+            CompatibleWith = [
+                'CYCLES'
+            ]
+
+            if not RenderEngine in CompatibleWith:
+                cycles_warning = layout.column(align=True)
+                cycles_warning.label(
+                    text="SID Temporal is not yet compatible with this render engine.", icon='ERROR'
+                    )
+                cycles_warning.label(
+                    text="       Please change the render engine to a compatible one."
+                    )
+                layout.separator()
+
+                # don't draw any more panel settings
+                return
+
+            quality = layout.column(align=True)
+            quality.prop(
+                settings,
+                "quality",
+                text="Quality"
+                )
+            if settings.quality == 'STANDARD':
+                quality.label(
+                    text="Denoise the whole image in a single pass.",
+                    icon='INFO'
+                    )
+                quality.label(
+                    text="       Maximum compositing speed and least memory consumption."
+                    )
+            elif settings.quality == 'HIGH':
+                quality.label(
+                    text="Denoise related render passes in groups.", icon='INFO'
+                    )
+                quality.label(
+                    text="       Moderate compositing speed and increased memory consumption."
+                    )
+            elif settings.quality == 'SUPER':
+                if RenderEngine == 'octane':
+                    quality.label(
+                        text="Renderer does not support super quality.", icon='INFO'
+                        )
+                    quality.label(
+                        text="       Will use high quality setting instead"
+                    )
+                else:
+                    quality.label(
+                        text="Denoise each render pass separately.", icon='INFO'
+                        )
+                    quality.label(
+                        text="       Slowest compositing speed and greatly increased memory consumption."
+                        )
+            layout.separator()
+
+            if settings.quality != "STANDARD":
+                passes = layout.column(align=True)
+                passes.label(
+                    text="Render passes:"
+                    )
+                
+                subpasses = passes.row(align=True)
+                subpasses.use_property_split = False
+
+                ##############
+                ### CYCLES ###
+                ##############
+                if RenderEngine == 'CYCLES':
+                    subpasses.prop(
+                        settings,
+                        "use_emission",
+                        text="Emission",
+                        toggle=True
+                        )
+                    subpasses.prop(
+                        settings,
+                        "use_transmission",
+                        text="Transmission",
+                        toggle=True
+                        )
+                    subpasses.prop(
+                        settings,
+                        "use_environment",
+                        text="Environment",
+                        toggle=True
+                        )
+
+                    subpasses.prop(
+                        settings,
+                        "use_volumetric",
+                        text="Volumetric",
+                        toggle=True
+                        )
+
+                layout.separator()
+
+            fileio = layout.column(align=True)
+            fileio.active = panel_active
+            fileio.prop(settings, "inputdir", text="Image directory")
+            fileio.separator()
+
+            fileio.label(text="It's recommended to enable Overwrite existing files")
+            fileio.label(text="unless you know what you are doing")
+            fileio.prop(scene.render, "use_overwrite", text="Overwrite existing files")
+
+            layout.operator("object.superimagedenoisetemporal", icon='SHADERFX')
+
+
         elif denoiser_type == "TEMPORAL" and is_temporal_supported:
             ##### TEMPORAL #####
 

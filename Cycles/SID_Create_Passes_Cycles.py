@@ -12,6 +12,7 @@ def create_cycles_passes(
         view_layer: ViewLayer,
         output_file_node: Node,
         connect_sockets: List[NodeSocket],
+        temporal_output_file_node: Node
         ):
 
     scene = context.scene
@@ -42,6 +43,10 @@ def create_cycles_passes(
     # Emission & Environment
     view_layer.use_pass_emit = settings.use_emission
     view_layer.use_pass_environment = settings.use_environment
+    # Temporal
+    if settings.denoiser_type == "SID TEMPORAL":
+        view_layer.use_motion_blur = False
+        view_layer.use_pass_vector = True
 
     # Connect it all for Cycles
     ntree.links.new(
@@ -186,3 +191,15 @@ def create_cycles_passes(
                 sid_node.outputs['Environment'],
                 output_file_node.inputs['Env']
                 )
+    if settings.denoiser_type == "SID TEMPORAL":
+        ntree.links.new(
+            sid_output_socket,
+            temporal_output_file_node.inputs["Image"]
+            )
+        
+        temporal_output_file_node.file_slots.new("Vector")
+        ntree.links.new(
+            renlayers_node.outputs["Vector"],
+            temporal_output_file_node.inputs["Vector"]
+            )
+        temporal_output_file_node.base_path = settings.inputdir + "noisy/######" 

@@ -21,6 +21,8 @@ from .Renderman.SID_QualityHigh_Renderman import create_sid_denoiser_high_rm
 from .Renderman.SID_QualitySuper_Renderman import create_sid_denoiser_super_rm
 from .Renderman.SID_Create_Passes_Renderman import create_renderman_passes
 
+from .Temporal.SID_Create_Temporal_Groups import create_temporal_setup
+
 from . import SID_Settings
 
 def find_node(start_node: Node, predicate: Callable[[Node], bool], recursive: bool = False) -> Node:
@@ -45,23 +47,26 @@ def find_node(start_node: Node, predicate: Callable[[Node], bool], recursive: bo
                 if node:
                     return node
     return None
-
 def is_sid_super_group(node: Node) -> bool:
     ''' Predicate that returns True if node is a SuperImageDenoiser '''
     return (
         node.bl_idname == 'CompositorNodeGroup'
         and node.name.startswith(("sid_node", ".SuperImageDenoiser"))
         )
-
 def is_composite_output(node: Node) -> bool:
     ''' Predicate that returns True if node is a Composite Output '''
     return node.bl_idname == 'CompositorNodeComposite'
-
 def is_sid_mlexr_file_output(node: Node) -> bool:
     ''' Predicate that returns True if node is a SID Multi-Layer EXR File Output '''
     return (
         node.bl_idname == 'CompositorNodeOutputFile'
         and node.name.startswith("mlEXR Node")
+        )
+def is_sid_temporal_output(node: Node) -> bool:
+    ''' Predicate that returns True if node is a SID Temporal Output '''
+    return (
+        node.bl_idname == 'CompositorNodeOutputFile'
+        and node.name.startswith("Temporal Output")
         )
 
 
@@ -71,7 +76,7 @@ class SID_Create(Operator):
     bl_description = "Enables all the necessary passes, Creates all the nodes you need, connects them all for you, to save the time you don't need to waste"
 
     def execute(self, context: Context):
-
+    
         scene = context.scene
         RenderEngine = scene.render.engine
         settings: SID_Settings = scene.sid_settings
@@ -89,7 +94,8 @@ class SID_Create(Operator):
             for comp in [node for node in ntree.nodes if (
                     is_composite_output(node) or
                     is_sid_mlexr_file_output(node) or
-                    is_sid_super_group(node)
+                    is_sid_super_group(node) or
+                    is_sid_temporal_output(node)
                 )]:
                 ntree.nodes.remove(comp)
 
@@ -179,6 +185,7 @@ class SID_Create(Operator):
             composite_node: Node = None
             sid_node: Node = None
             output_file_node: Node = None
+            temporal_output_file_node: Node = None
 
             # Sockets to connect to the SID Node
             connect_sockets: List[NodeSocket] = []
@@ -222,6 +229,14 @@ class SID_Create(Operator):
                         # the correct passes, if needed
                         ntree.nodes.remove(output_file_node)
                         output_file_node = None
+
+                    # Look for any existing SID Temporal mlEXR File Output node
+                    temporal_output_file_node = find_node(renlayers_node, is_sid_temporal_output, True)
+                    if temporal_output_file_node:
+                        # Delete the File Output node; we'll recreate it later with
+                        # the correct passes, if needed
+                        ntree.nodes.remove(temporal_output_file_node)
+                        temporal_output_file_node = None
 
                     # Look for existing SID Node connected to Render Layer
                     sid_node = find_node(renlayers_node, is_sid_super_group, False)
@@ -321,13 +336,19 @@ class SID_Create(Operator):
                 output_file_node.location = (400, viewlayer_displace - 200)
                 output_file_node.format.file_format = 'OPEN_EXR_MULTILAYER'
 
+            if settings.denoiser_type == "SID TEMPORAL":
+                temporal_output_file_node = ntree.nodes.new(type='CompositorNodeOutputFile')
+                temporal_output_file_node.name = "Temporal Output"
+                temporal_output_file_node.location = (400, viewlayer_displace - 500)
+                temporal_output_file_node.format.file_format = 'OPEN_EXR_MULTILAYER'
+
 
             ##############
             ### CYCLES ###
             ##############
 
             if RenderEngine == 'CYCLES':
-                create_cycles_passes(settings, context, renlayers_node, sid_node, view_layer, output_file_node, connect_sockets)
+                create_cycles_passes(settings, context, renlayers_node, sid_node, view_layer, output_file_node, connect_sockets, temporal_output_file_node)
 
             ###############
             ### LUXCORE ###
@@ -351,5 +372,33 @@ class SID_Create(Operator):
                 create_renderman_passes(settings, context, renlayers_node, sid_node, view_layer, output_file_node, connect_sockets)
 
             viewlayer_displace -= 1000
+
+        return {'FINISHED'}
+
+
+class SID_CreateTemporal(Operator):
+    bl_idname = "object.superimagedenoisetemporal"
+    bl_label = "Render and Denoise with SID Temporal"
+    bl_description = "Enables all the necessary passes, Creates all the nodes you need, connects them all for you, renders and denoises the frames"
+
+    def execute(self, context: Context):
+        scene = context.scene
+        settings: SID_Settings = scene.sid_settings
+
+        SID_Create.execute(self, context)
+        scene.frame_start = scene.frame_start
+        scene.frame_end = scene.frame_end
+        scene.render.image_settings.file_format = 'PNG'
+        scene.render.image_settings.color_mode = 'RGB'
+        scene.render.image_settings.color_depth = '8'
+        for frame in range(scene.frame_start, scene.frame_end + 2, scene.frame_step):
+            scene.frame_current = frame
+            scene.render.filepath = settings.inputdir + "preview/" + str(frame).zfill(6) + ".png"
+            bpy.ops.render.render(animation = False, write_still = True, scene = scene.name)
+        TDScene = bpy.data.scenes.new(name='TDScene')
+        
+
+        create_temporal_setup(TDScene,settings)
+        bpy.data.scenes.remove(TDScene)
 
         return {'FINISHED'}
