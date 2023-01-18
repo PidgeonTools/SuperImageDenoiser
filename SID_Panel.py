@@ -400,6 +400,7 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
 
             fileio = layout.column(align=True)
             fileio.active = panel_active
+            fileio.label(text="do not use relative path")
             fileio.prop(settings, "inputdir", text="Image directory")
             fileio.separator()
 
@@ -408,6 +409,7 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             fileio.prop(scene.render, "use_overwrite", text="Overwrite existing files")
 
             layout.operator("object.superimagedenoisetemporal", icon='SHADERFX')
+            layout.operator("object.superimagedenoisealign", icon='SHADERFX')
 
 
         elif denoiser_type == "TEMPORAL" and is_temporal_supported:

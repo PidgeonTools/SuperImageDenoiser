@@ -259,7 +259,7 @@ def create_temporal_align():
 
     return align_tree
 
-def create_temporal_setup(scene,settings):
+def create_temporal_setup(scene,settings,start_frame):
     #setup node groups
     
     scene.use_nodes = True
@@ -278,15 +278,15 @@ def create_temporal_setup(scene,settings):
             file_count += 1
 
     Frame_0 = ntree.nodes.new(type="CompositorNodeImage")
-    Frame_0.image = bpy.data.images.load(path_noisy + str(0).zfill(6) + ".exr")
+    Frame_0.image = bpy.data.images.load(path_noisy + str(start_frame).zfill(6) + ".exr")
     Frame_0.location = (-200, 400)
 
     Frame_1 = ntree.nodes.new(type="CompositorNodeImage")
-    Frame_1.image = bpy.data.images.load(path_noisy + str(1).zfill(6) + ".exr")
+    Frame_1.image = bpy.data.images.load(path_noisy + str(start_frame).zfill(6) + ".exr")
     Frame_1.location = (-200, 0)
 
     Frame_2 = ntree.nodes.new(type="CompositorNodeImage")
-    Frame_2.image = bpy.data.images.load(path_noisy + str(2).zfill(6) + ".exr")
+    Frame_2.image = bpy.data.images.load(path_noisy + str(start_frame).zfill(6) + ".exr")
     Frame_2.location = (-200, -400)
 
     TempAlign = ntree.nodes.new("CompositorNodeGroup")
@@ -310,12 +310,12 @@ def create_temporal_setup(scene,settings):
     #go through each file and render frame
 
     for frame in range(0, file_count - 2):
-        Frame_0.image = bpy.data.images.load(path_noisy + str(frame).zfill(6) + ".exr")
-        Frame_1.image = bpy.data.images.load(path_noisy + str(frame + 1).zfill(6) + ".exr")
-        Frame_2.image = bpy.data.images.load(path_noisy + str(frame + 2).zfill(6) + ".exr")
+        Frame_0.image = bpy.data.images.load(path_noisy + str(frame + 0 + start_frame).zfill(6) + ".exr")
+        Frame_1.image = bpy.data.images.load(path_noisy + str(frame + 1 + start_frame).zfill(6) + ".exr")
+        Frame_2.image = bpy.data.images.load(path_noisy + str(frame + 2 + start_frame).zfill(6) + ".exr")
         scene.frame_current = frame
         scene.frame_start = 1
         scene.frame_end = file_count
-        scene.render.filepath = path_denoised + str(frame).zfill(6) + ".png"
+        scene.render.filepath = path_denoised + str(frame + start_frame).zfill(6) + ".png"
         bpy.ops.render.render(animation = False, write_still = True, scene = scene.name)
     

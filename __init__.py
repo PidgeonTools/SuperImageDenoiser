@@ -4,7 +4,7 @@ bl_info = {
     "version": (3, 2, 0),
     "blender": (2, 83, 0),
     "location": "Properties > Render > Create Super Denoiser",
-    "description": "SID denoises your renders near-perfectly, with only one click!",
+    "description": "[BETA] SID denoises your renders near-perfectly, with only one click!",
     "warning": "",
     "wiki_url": "https://discord.gg/cnFdGQP",
     "endpoint_url": "https://raw.githubusercontent.com/PidgeonTools/SAM-Endpoints/main/SuperImageDenoiser.json",
@@ -18,7 +18,8 @@ from bpy.props import (
     )
 from .SuperImageDenoiser import (
     SID_Create,
-    SID_CreateTemporal
+    SID_CreateTemporal,
+    SID_AlignTemporal
     )
 
 from .SID_Settings import (
@@ -109,6 +110,7 @@ classes = (
     SID_PT_SOCIALS_Panel,
     SID_Create,
     SID_CreateTemporal,
+    SID_AlignTemporal,
     TD_OT_Render,
     TD_OT_StopRender,
     TD_OT_Denoise,

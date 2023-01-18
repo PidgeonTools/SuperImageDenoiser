@@ -378,7 +378,7 @@ class SID_Create(Operator):
 
 class SID_CreateTemporal(Operator):
     bl_idname = "object.superimagedenoisetemporal"
-    bl_label = "Render and Denoise with SID Temporal"
+    bl_label = "1/2 - Render with SID Temporal"
     bl_description = "Enables all the necessary passes, Creates all the nodes you need, connects them all for you, renders and denoises the frames"
 
     def execute(self, context: Context):
@@ -386,19 +386,26 @@ class SID_CreateTemporal(Operator):
         settings: SID_Settings = scene.sid_settings
 
         SID_Create.execute(self, context)
-        scene.frame_start = scene.frame_start
-        scene.frame_end = scene.frame_end
         scene.render.image_settings.file_format = 'PNG'
-        scene.render.image_settings.color_mode = 'RGB'
+        scene.render.image_settings.color_mode = 'RGBA'
         scene.render.image_settings.color_depth = '8'
         for frame in range(scene.frame_start, scene.frame_end + 2, scene.frame_step):
             scene.frame_current = frame
             scene.render.filepath = settings.inputdir + "preview/" + str(frame).zfill(6) + ".png"
             bpy.ops.render.render(animation = False, write_still = True, scene = scene.name)
-        TDScene = bpy.data.scenes.new(name='TDScene')
-        
 
-        create_temporal_setup(TDScene,settings)
+        return {'FINISHED'}
+
+class SID_AlignTemporal(Operator):
+    bl_idname = "object.superimagedenoisealign"
+    bl_label = "2/2 - Denoise with SID Temporal"
+    bl_description = "Step two of the Temporal Denoising process. This will align the frames and denoise them."
+
+    def execute(self, context: Context):
+        scene = context.scene
+        settings: SID_Settings = scene.sid_settings
+        TDScene = bpy.data.scenes[scene.name].copy()
+        create_temporal_setup(TDScene,settings,scene.frame_start)
         bpy.data.scenes.remove(TDScene)
 
         return {'FINISHED'}
