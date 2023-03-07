@@ -303,6 +303,7 @@ def create_temporal_setup(scene,settings,start_frame):
     
     scene.use_nodes = True
     ntree = scene.node_tree
+    settings.inputdir = bpy.path.abspath(settings.inputdir)
     path_noisy = settings.inputdir + "noisy/"
     path_denoised = settings.inputdir + "denoised/"
 
