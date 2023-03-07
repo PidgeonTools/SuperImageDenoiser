@@ -202,4 +202,11 @@ def create_cycles_passes(
             renlayers_node.outputs["Vector"],
             temporal_output_file_node.inputs["Vector"]
             )
+        
+        temporal_output_file_node.file_slots.new("Depth")
+        ntree.links.new(
+            renlayers_node.outputs["Depth"],
+            temporal_output_file_node.inputs["Depth"]
+            )
+        settings.inputdir = bpy.path.abspath(settings.inputdir)
         temporal_output_file_node.base_path = settings.inputdir + "noisy/######" 

@@ -3,6 +3,7 @@ import os
 from bpy.types import NodeTree, Node, NodeLink, NodeSocket
 from typing import Callable
 from ..SID_Settings import SID_Settings
+
 def find_node(start_node: Node, predicate: Callable[[Node], bool], recursive: bool = False):
     #Finds the first Node attached to start_node that matches a predicate condition.
     #If recursive is True, this function will recursively search via all linked Output sockets.
@@ -161,51 +162,73 @@ def create_temporal_median(Minimum: bool):
 
 def create_temporal_align():
     #create temporal align node group
+    settings: SID_Settings = bpy.context.scene.sid_settings
     align_tree: NodeTree = bpy.data.node_groups.new(type="CompositorNodeTree", name=".Align")
     align_tree_input = align_tree.nodes.new("NodeGroupInput")
-    align_tree_input.location = (-200, 0)
 
     align_tree.inputs.new("NodeSocketColor", "Frame + 0")
     align_tree.inputs.new("NodeSocketVector", "Vector + 0")
     align_tree.inputs.new("NodeSocketColor", "Frame + 1")
+    align_tree.inputs.new("NodeSocketVector", "Vector + 1")
+    align_tree.inputs.new("NodeSocketFloat", "Depth + 1")
     align_tree.inputs.new("NodeSocketColor", "Frame + 2")
     align_tree.inputs.new("NodeSocketVector", "Vector + 2")
 
     align_tree.outputs.new("NodeSocketColor", "Temporal Aligned")
 
+    displace_vector_0 = align_tree.nodes.new(type="CompositorNodeDisplace")
+    displace_vector_0.inputs["X Scale"].default_value = -1
+    displace_vector_0.inputs["Y Scale"].default_value = -1
+
     displace_frame_0 = align_tree.nodes.new(type="CompositorNodeDisplace")
-    displace_frame_0.location = (0, 0)
     displace_frame_0.inputs["X Scale"].default_value = -1
     displace_frame_0.inputs["Y Scale"].default_value = -1
     
+    displace_vector_2 = align_tree.nodes.new(type="CompositorNodeDisplace")
+    displace_vector_2.inputs["X Scale"].default_value = 1
+    displace_vector_2.inputs["Y Scale"].default_value = 1
+
     displace_frame_2 = align_tree.nodes.new(type="CompositorNodeDisplace")
-    displace_frame_2.location = (0, -200)
     displace_frame_2.inputs["X Scale"].default_value = 1
     displace_frame_2.inputs["Y Scale"].default_value = 1
 
     median_max_0 = align_tree.nodes.new("CompositorNodeGroup")
     median_max_0.node_tree = create_temporal_median(False)
-    median_max_0.location = (200, 0)
+
     median_min_2 = align_tree.nodes.new("CompositorNodeGroup")
     median_min_2.node_tree = create_temporal_median(True)
-    median_min_2.location = (200, -200)
+
     median_min_a = align_tree.nodes.new("CompositorNodeGroup")
     median_min_a.node_tree = create_temporal_median(True)
-    median_min_a.location = (400, 0)
+
     median_max_a = align_tree.nodes.new("CompositorNodeGroup")
     median_max_a.node_tree = create_temporal_median(False)
-    median_max_a.location = (600, 0)
+
+    vecblur_node = align_tree.nodes.new("CompositorNodeVecBlur")
+    vecblur_node.mute = not settings.SIDT_MB_Toggle
+    vecblur_node.samples = settings.SIDT_MB_Samples
+    vecblur_node.factor = settings.SIDT_MB_Shutter
+    vecblur_node.speed_min = settings.SIDT_MB_Min
+    vecblur_node.speed_max = settings.SIDT_MB_Max
+    vecblur_node.use_curved = settings.SIDT_MB_Interpolation
 
     align_tree_output = align_tree.nodes.new("NodeGroupOutput")
-    align_tree_output.location = (800, 0)
 
     # Link nodes
+    align_tree.links.new(
+        align_tree_input.outputs["Vector + 0"],
+        displace_vector_0.inputs[0]
+        )
+    align_tree.links.new(
+        align_tree_input.outputs["Vector + 1"],
+        displace_vector_0.inputs[1]
+        )
     align_tree.links.new(
         align_tree_input.outputs["Frame + 0"],
         displace_frame_0.inputs[0]
         )
     align_tree.links.new(
-        align_tree_input.outputs["Vector + 0"],
+        displace_vector_0.outputs[0],
         displace_frame_0.inputs[1]
         )
     align_tree.links.new(
@@ -215,21 +238,27 @@ def create_temporal_align():
     align_tree.links.new(
         align_tree_input.outputs["Frame + 1"],
         median_min_2.inputs[0]
+        ) 
+    align_tree.links.new(
+        align_tree_input.outputs["Vector + 1"],
+        displace_vector_2.inputs[1]
+        )
+    align_tree.links.new(
+        align_tree_input.outputs["Vector + 2"],
+        displace_vector_2.inputs[0]
         )
     align_tree.links.new(
         align_tree_input.outputs["Frame + 2"],
         displace_frame_2.inputs[0]
         )
     align_tree.links.new(
-        align_tree_input.outputs["Vector + 2"],
+        displace_vector_2.outputs[0],
         displace_frame_2.inputs[1]
         )
-
     align_tree.links.new(
         displace_frame_0.outputs[0],
         median_min_a.inputs[1]
         )
-
     align_tree.links.new(
         displace_frame_2.outputs[0],
         median_max_0.inputs[1]
@@ -238,7 +267,6 @@ def create_temporal_align():
         displace_frame_2.outputs[0],
         median_min_2.inputs[1]
         )
-    
     align_tree.links.new(
         median_max_0.outputs[0],
         median_min_a.inputs[0]
@@ -251,9 +279,20 @@ def create_temporal_align():
         median_min_a.outputs[0],
         median_max_a.inputs[0]
         )
-    
     align_tree.links.new(
         median_max_a.outputs[0],
+        vecblur_node.inputs[0]
+        )
+    align_tree.links.new(
+        align_tree_input.outputs["Depth + 1"],
+        vecblur_node.inputs[1]
+        )
+    align_tree.links.new(
+        align_tree_input.outputs["Vector + 1"],
+        vecblur_node.inputs[2]
+        )
+    align_tree.links.new(
+        vecblur_node.outputs[0],
         align_tree_output.inputs["Temporal Aligned"]
         )
 
@@ -279,31 +318,28 @@ def create_temporal_setup(scene,settings,start_frame):
 
     Frame_0 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_0.image = bpy.data.images.load(path_noisy + str(start_frame).zfill(6) + ".exr")
-    Frame_0.location = (-200, 400)
 
     Frame_1 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_1.image = bpy.data.images.load(path_noisy + str(start_frame).zfill(6) + ".exr")
-    Frame_1.location = (-200, 0)
 
     Frame_2 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_2.image = bpy.data.images.load(path_noisy + str(start_frame).zfill(6) + ".exr")
-    Frame_2.location = (-200, -400)
 
     TempAlign = ntree.nodes.new("CompositorNodeGroup")
     TempAlign.node_tree = create_temporal_align()
-    TempAlign.location = (0, 0)
 
     OutputNode = ntree.nodes.new(type="CompositorNodeComposite")
-    OutputNode.location = (200, 0)
 
     #link frame_0 node with tempalign node in the compositor
-    ntree.links.new(Frame_0.outputs[1], TempAlign.inputs[0])
-    ntree.links.new(Frame_0.outputs[0], TempAlign.inputs[1])
+    ntree.links.new(Frame_0.outputs[2], TempAlign.inputs[0])
+    ntree.links.new(Frame_0.outputs[1], TempAlign.inputs[1])
     
-    ntree.links.new(Frame_1.outputs[1], TempAlign.inputs[2])
+    ntree.links.new(Frame_1.outputs[2], TempAlign.inputs[2])
+    ntree.links.new(Frame_1.outputs[1], TempAlign.inputs[3])
+    ntree.links.new(Frame_1.outputs[0], TempAlign.inputs[4])
     
-    ntree.links.new(Frame_2.outputs[1], TempAlign.inputs[3])
-    ntree.links.new(Frame_2.outputs[0], TempAlign.inputs[4])
+    ntree.links.new(Frame_2.outputs[2], TempAlign.inputs[5])
+    ntree.links.new(Frame_2.outputs[1], TempAlign.inputs[6])
 
     ntree.links.new(TempAlign.outputs[0], OutputNode.inputs[0])
 

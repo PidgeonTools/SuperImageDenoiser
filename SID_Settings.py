@@ -134,7 +134,7 @@ class SID_Settings(PropertyGroup):
             ),
         ),
         default='SID',
-        description="Choose the denoiser type, SID is recomended for images, Temporal for animations only",
+        description="Choose the denoiser type,\nSID is recomended for images and animations,\ntemporal for animations only",
         options=set(), # Not animatable!
         )
 
@@ -174,35 +174,35 @@ class SID_Settings(PropertyGroup):
     use_emission: BoolProperty(
         name="Emission",
         default=True,
-        description="Enable this if you have Emissive materials in your scene",
+        description="Enable this if you have emissive materials in your scene",
         options=set(), # Not animatable!
         )
 
     use_environment: BoolProperty(
         name="Environment",
         default=True,
-        description="Enable this if you have Environment materials in your scene",
+        description="Enable this if your environment is visible in the render",
         options=set(), # Not animatable!
         )
 
     use_transmission: BoolProperty(
         name="Transmission",
         default=True,
-        description="Enable this if you have Transmissive materials in your scene",
+        description="Enable this if you have transmissive materials in your scene",
         options=set(), # Not animatable!
         )
 
     use_volumetric: BoolProperty(
         name="Volume",
         default=False,
-        description="Enable this if you have Volumetric materials in your scene",
+        description="Enable this if you have volumetric materials in your scene",
         options=set(), # Not animatable!
         )
 
     use_refraction: BoolProperty(
         name="Refraction",
         default=False,
-        description="Enable this if you have Refractive materials in your scene",
+        description="Enable this if you have refractive materials in your scene",
         options=set(), # Not animatable!
         )
 
@@ -230,7 +230,71 @@ class SID_Settings(PropertyGroup):
     use_caustics: BoolProperty(
         name="Caustics",
         default=True,
-        description="Enable this if you have Caustics in your Scene",
+        description="Enable this if you have caustics in your Scene",
+        options=set(), # Not animatable!
+        )
+
+    SIDT_MB_Toggle: BoolProperty(
+        name="Motion Blur",
+        default=True,
+        description="Enables faked motion blur",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_MB_Samples: IntProperty(
+        name="Samples",
+        default=32,
+        min=1,
+        max=256,
+        description="Number of motion blur samples,\nmore samples = more accurate motion blur",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_MB_Shutter: FloatProperty(
+        name="Shutter Speed",
+        default=0.5,
+        min=0,
+        max=2,
+        description="Time taken in frames between shutter open and close",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_MB_Min: IntProperty(
+        name="Min",
+        default=0,
+        min=0,
+        max=1024,
+        description="Minimum speed for a pixel to be blurred,\nused to separate fast moving objects from slow moving ones",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_MB_Max: IntProperty(
+        name="Max",
+        default=0,
+        min=0,
+        max=1024,
+        description="Maximum speed, or zero for no limit",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_MB_Interpolation: BoolProperty(
+        name="Curved Interpolation",
+        default=False,
+        description="Interpolate between frames in a bezier curve, rather than linearly",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_OUT_Compressed: BoolProperty(
+        name="Smaller Working Files",
+        default=False,
+        description="Compresses the working files to save space,\nwill use 32bit EXR instead of 64bit",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_OUT_Preview: BoolProperty(
+        name="Generate Preview Images",
+        default=True,
+        description="Saves preview images of the SID-Denoised frames,\nthese are not used by the temporal denoiser!\nThey are only used for previewing the rendered frames",
         options=set(), # Not animatable!
         )
 

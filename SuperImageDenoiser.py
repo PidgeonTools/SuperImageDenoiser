@@ -85,6 +85,7 @@ class SID_Create(Operator):
         # if scene.render.engine is not 'CYCLES' or not 'LUXCORE':
         #     scene.render.engine = 'CYCLES'
         scene.use_nodes = True
+        scene.render.use_compositing = True
 
 
         ntree = scene.node_tree
@@ -341,6 +342,11 @@ class SID_Create(Operator):
                 temporal_output_file_node.name = "Temporal Output"
                 temporal_output_file_node.location = (400, viewlayer_displace - 500)
                 temporal_output_file_node.format.file_format = 'OPEN_EXR_MULTILAYER'
+                temporal_output_file_node.format.exr_codec = 'ZIP'
+                if settings.SIDT_OUT_Compressed:
+                    temporal_output_file_node.format.color_depth = '16'
+                else:
+                    temporal_output_file_node.format.color_depth = '32'
 
 
             ##############
@@ -382,6 +388,8 @@ class SID_CreateTemporal(Operator):
     bl_description = "Enables all the necessary passes, Creates all the nodes you need, connects them all for you, renders and denoises the frames"
 
     def execute(self, context: Context):
+        bpy.ops.wm.console_toggle()
+
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
 
@@ -394,6 +402,7 @@ class SID_CreateTemporal(Operator):
             scene.render.filepath = settings.inputdir + "preview/" + str(frame).zfill(6) + ".png"
             bpy.ops.render.render(animation = False, write_still = True, scene = scene.name)
 
+        bpy.ops.wm.console_toggle()
         return {'FINISHED'}
 
 class SID_AlignTemporal(Operator):
@@ -402,10 +411,13 @@ class SID_AlignTemporal(Operator):
     bl_description = "Step two of the Temporal Denoising process. This will align the frames and denoise them."
 
     def execute(self, context: Context):
+        bpy.ops.wm.console_toggle()
+
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
         TDScene = bpy.data.scenes[scene.name].copy()
         create_temporal_setup(TDScene,settings,scene.frame_start)
         bpy.data.scenes.remove(TDScene)
 
+        bpy.ops.wm.console_toggle()
         return {'FINISHED'}

@@ -400,13 +400,34 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
 
             fileio = layout.column(align=True)
             fileio.active = panel_active
-            fileio.label(text="do not use relative path")
+            fileio.label(text="Image Save:")
             fileio.prop(settings, "inputdir", text="Image directory")
+            fileio.separator()
+            fileio.prop(settings, "SIDT_OUT_Compressed")
+            fileio.prop(settings, "SIDT_OUT_Preview")
             fileio.separator()
 
             fileio.label(text="It's recommended to enable Overwrite existing files")
             fileio.label(text="unless you know what you are doing")
             fileio.prop(scene.render, "use_overwrite", text="Overwrite existing files")
+
+            layout.separator()
+
+            motion_blur = layout.column(align=True)
+            motion_blur.active = panel_active
+            motion_blur.prop(settings, "SIDT_MB_Toggle")
+            motion_blur_settings = layout.column(align=True)
+            motion_blur_settings.active = (panel_active and settings.SIDT_MB_Toggle)
+            motion_blur_settings.label(text="Motion Blur Settings")
+            motion_blur_settings.prop(settings, "SIDT_MB_Samples")
+            motion_blur_settings.prop(settings, "SIDT_MB_Shutter")
+            motion_blur_settings.label(text="Speed:")
+            motion_blur_settings.prop(settings, "SIDT_MB_Min")
+            motion_blur_settings.prop(settings, "SIDT_MB_Max")
+            motion_blur_settings.label(text="Interpolation:")
+            motion_blur_settings.prop(settings, "SIDT_MB_Interpolation")
+            
+            layout.separator()
 
             layout.operator("object.superimagedenoisetemporal", icon='SHADERFX')
             layout.operator("object.superimagedenoisealign", icon='SHADERFX')
