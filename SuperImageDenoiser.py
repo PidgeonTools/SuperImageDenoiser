@@ -1,4 +1,4 @@
-import bpy
+import bpy, os
 from bpy.types import Context, Node, NodeLink, NodeSocket, Operator, ViewLayer
 from typing import Callable, List
 
@@ -397,10 +397,14 @@ class SID_CreateTemporal(Operator):
         scene.render.image_settings.file_format = 'PNG'
         scene.render.image_settings.color_mode = 'RGBA'
         scene.render.image_settings.color_depth = '8'
-        for frame in range(scene.frame_start, scene.frame_end + 2, scene.frame_step):
+        for frame in range(scene.frame_start, scene.frame_end + 3, scene.frame_step):
             scene.frame_current = frame
             scene.render.filepath = settings.inputdir + "preview/" + str(frame).zfill(6) + ".png"
-            bpy.ops.render.render(animation = False, write_still = True, scene = scene.name)
+
+            if (not scene.render.use_overwrite) and os.path.exists(scene.render.filepath):
+                print("Overwrite is disabled. Skipping frame " + str(frame) + " because it already exists.")
+            else:
+                bpy.ops.render.render(animation = False, write_still = True, scene = scene.name)
 
         bpy.ops.wm.console_toggle()
         return {'FINISHED'}

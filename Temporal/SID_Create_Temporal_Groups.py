@@ -319,12 +319,19 @@ def create_temporal_setup(scene,settings,start_frame):
 
     Frame_0 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_0.image = bpy.data.images.load(path_noisy + str(start_frame).zfill(6) + ".exr")
+    Frame_0.image.source = "SEQUENCE"
+    Frame_0.frame_duration = file_count
+    Frame_0.frame_start = start_frame
 
     Frame_1 = ntree.nodes.new(type="CompositorNodeImage")
-    Frame_1.image = bpy.data.images.load(path_noisy + str(start_frame).zfill(6) + ".exr")
+    Frame_1.image = Frame_0.image
+    Frame_1.frame_duration = Frame_0.frame_duration
+    Frame_1.frame_start = Frame_0.frame_start
 
     Frame_2 = ntree.nodes.new(type="CompositorNodeImage")
-    Frame_2.image = bpy.data.images.load(path_noisy + str(start_frame).zfill(6) + ".exr")
+    Frame_2.image = Frame_0.image
+    Frame_2.frame_duration = Frame_0.frame_duration
+    Frame_2.frame_start = Frame_0.frame_start
 
     TempAlign = ntree.nodes.new("CompositorNodeGroup")
     TempAlign.node_tree = create_temporal_align()
@@ -346,13 +353,21 @@ def create_temporal_setup(scene,settings,start_frame):
 
     #go through each file and render frame
 
+    scene.frame_start = 1
+    scene.frame_end = file_count
+
     for frame in range(0, file_count - 2):
-        Frame_0.image = bpy.data.images.load(path_noisy + str(frame + 0 + start_frame).zfill(6) + ".exr")
-        Frame_1.image = bpy.data.images.load(path_noisy + str(frame + 1 + start_frame).zfill(6) + ".exr")
-        Frame_2.image = bpy.data.images.load(path_noisy + str(frame + 2 + start_frame).zfill(6) + ".exr")
+        
+        Frame_0.frame_offset = frame
+        Frame_1.frame_offset = frame + 1
+        Frame_2.frame_offset = frame + 2
+
         scene.frame_current = frame
-        scene.frame_start = 1
-        scene.frame_end = file_count
+
         scene.render.filepath = path_denoised + str(frame + start_frame).zfill(6) + ".png"
-        bpy.ops.render.render(animation = False, write_still = True, scene = scene.name)
-    
+
+        if (not scene.render.use_overwrite) and os.path.exists(scene.render.filepath):
+            print("Overwrite is disabled. Skipping frame " + str(frame + start_frame).zfill(6) + ".exr because it already exists.")
+        else:
+            bpy.ops.render.render(animation = False, write_still = True, scene = scene.name)
+        
