@@ -241,11 +241,11 @@ def create_temporal_align():
         ) 
     align_tree.links.new(
         align_tree_input.outputs["Vector + 1"],
-        displace_vector_2.inputs[1]
+        displace_vector_2.inputs[0]
         )
     align_tree.links.new(
         align_tree_input.outputs["Vector + 2"],
-        displace_vector_2.inputs[0]
+        displace_vector_2.inputs[1]
         )
     align_tree.links.new(
         align_tree_input.outputs["Frame + 2"],
