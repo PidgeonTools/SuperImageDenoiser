@@ -358,11 +358,11 @@ def create_temporal_setup(scene,settings,start_frame):
 
     for frame in range(0, file_count - 2):
         
+        scene.frame_current = frame
+
         Frame_0.frame_offset = frame
         Frame_1.frame_offset = frame + 1
         Frame_2.frame_offset = frame + 2
-
-        scene.frame_current = frame
 
         scene.render.filepath = path_denoised + str(frame + start_frame).zfill(6) + ".png"
 
