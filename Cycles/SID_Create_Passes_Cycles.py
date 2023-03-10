@@ -47,6 +47,7 @@ def create_cycles_passes(
     if settings.denoiser_type == "SID TEMPORAL":
         view_layer.use_motion_blur = False
         view_layer.use_pass_vector = True
+        view_layer.use_pass_z = True
 
     # Connect it all for Cycles
     ntree.links.new(
