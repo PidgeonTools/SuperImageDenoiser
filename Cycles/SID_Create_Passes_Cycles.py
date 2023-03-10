@@ -45,7 +45,7 @@ def create_cycles_passes(
     view_layer.use_pass_environment = settings.use_environment
     # Temporal
     if settings.denoiser_type == "SID TEMPORAL":
-        view_layer.use_motion_blur = False
+        scene.render.use_motion_blur = False
         view_layer.use_pass_vector = True
         view_layer.use_pass_z = True
 
