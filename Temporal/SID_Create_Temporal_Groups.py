@@ -317,6 +317,10 @@ def create_temporal_setup(scene,settings,start_frame):
         if file.endswith(".exr"):
             file_count += 1
 
+    scene.frame_start = 1
+    scene.frame_end = file_count
+    scene.frame_current = 1
+
     Frame_0 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_0.image = bpy.data.images.load(path_noisy + str(start_frame).zfill(6) + ".exr")
     Frame_0.image.source = "SEQUENCE"
@@ -352,9 +356,6 @@ def create_temporal_setup(scene,settings,start_frame):
     ntree.links.new(TempAlign.outputs[0], OutputNode.inputs[0])
 
     #go through each file and render frame
-
-    scene.frame_start = 1
-    scene.frame_end = file_count
 
     for frame in range(0, file_count - 2):
         

@@ -1,5 +1,5 @@
 import bpy, os
-from bpy.types import Context, Node, NodeLink, NodeSocket, Operator, ViewLayer
+from bpy.types import Context, Node, NodeLink, NodeSocket, Operator, ViewLayer, Timer, Scene
 from typing import Callable, List
 
 from .SID_Create_DenoiserGroup import create_sid_super_denoiser_group
@@ -68,7 +68,6 @@ def is_sid_temporal_output(node: Node) -> bool:
         node.bl_idname == 'CompositorNodeOutputFile'
         and node.name.startswith("Temporal Output")
         )
-
 
 class SID_Create(Operator):
     bl_idname = "object.superimagedenoise"
@@ -380,48 +379,4 @@ class SID_Create(Operator):
             viewlayer_displace -= 1000
 
         return {'FINISHED'}
-
-
-class SID_CreateTemporal(Operator):
-    bl_idname = "object.superimagedenoisetemporal"
-    bl_label = "1/2 - Render with SID Temporal"
-    bl_description = "Enables all the necessary passes, Creates all the nodes you need, connects them all for you, renders and denoises the frames"
-
-    def execute(self, context: Context):
-        bpy.ops.wm.console_toggle()
-
-        scene = context.scene
-        settings: SID_Settings = scene.sid_settings
-
-        SID_Create.execute(self, context)
-        scene.render.image_settings.file_format = 'PNG'
-        scene.render.image_settings.color_mode = 'RGBA'
-        scene.render.image_settings.color_depth = '8'
-        for frame in range(scene.frame_start, scene.frame_end + 3, scene.frame_step):
-            scene.frame_current = frame
-            scene.render.filepath = settings.inputdir + "preview/" + str(frame).zfill(6) + ".png"
-
-            if (not scene.render.use_overwrite) and os.path.exists(scene.render.filepath):
-                print("Overwrite is disabled. Skipping frame " + str(frame) + " because it already exists.")
-            else:
-                bpy.ops.render.render(animation = False, write_still = True, scene = scene.name)
-
-        bpy.ops.wm.console_toggle()
-        return {'FINISHED'}
-
-class SID_AlignTemporal(Operator):
-    bl_idname = "object.superimagedenoisealign"
-    bl_label = "2/2 - Denoise with SID Temporal"
-    bl_description = "Step two of the Temporal Denoising process. This will align the frames and denoise them."
-
-    def execute(self, context: Context):
-        bpy.ops.wm.console_toggle()
-
-        scene = context.scene
-        settings: SID_Settings = scene.sid_settings
-        TDScene = bpy.data.scenes[scene.name].copy()
-        create_temporal_setup(TDScene,settings,scene.frame_start)
-        bpy.data.scenes.remove(TDScene)
-
-        bpy.ops.wm.console_toggle()
-        return {'FINISHED'}
+    

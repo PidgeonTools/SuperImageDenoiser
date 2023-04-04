@@ -18,8 +18,6 @@ from bpy.props import (
     )
 from .SuperImageDenoiser import (
     SID_Create,
-    SID_CreateTemporal,
-    SID_AlignTemporal
     )
 
 from .SID_Settings import (
@@ -38,6 +36,13 @@ from .SID_Temporal import (
     TD_OT_StopRender,
     TD_OT_Denoise,
     TD_OT_StopDenoise,
+    )
+
+from .SID_Temporal2 import (
+    SIDT_OT_Render,
+    SIDT_OT_StopRender,
+    SIDT_OT_Denoise,
+    SIDT_OT_StopDenoise,
     )
 
 from . import addon_updater_ops
@@ -109,8 +114,10 @@ classes = (
     SID_PT_SID_Panel,
     SID_PT_SOCIALS_Panel,
     SID_Create,
-    SID_CreateTemporal,
-    SID_AlignTemporal,
+    SIDT_OT_Render,
+    SIDT_OT_StopRender,
+    SIDT_OT_Denoise,
+    SIDT_OT_StopDenoise,
     TD_OT_Render,
     TD_OT_StopRender,
     TD_OT_Denoise,

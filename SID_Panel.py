@@ -428,8 +428,25 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             
             motion_blur_settings.separator()
 
-            layout.operator("object.superimagedenoisetemporal", icon='SHADERFX')
-            layout.operator("object.superimagedenoisealign", icon='SHADERFX')
+            sidtrender = layout.column(align=True)
+            sidtrender.active = panel_active
+            if is_rendering:
+                sidtrender.label(text=f"{denoise_render_status.jobs_done} / {denoise_render_status.jobs_total} View Layers completed", icon='INFO')
+                sidtrender.prop(denoise_render_status, "percent_complete")
+                sidtrender.operator("object.superimagedenoisetemporal_stop", icon='CANCEL')
+            else:
+                sidtrender.operator("object.superimagedenoisetemporal", icon='RENDER_ANIMATION')
+            sidtrender.separator()
+
+            sidtdenoise = layout.column(align=True)
+            sidtdenoise.active = panel_active
+            if is_denoising:
+                sidtdenoise.active = True
+                sidtdenoise.label(text=f"{temporal_denoiser_status.jobs_done} / {temporal_denoiser_status.jobs_total} View Layers completed", icon='INFO')
+                sidtdenoise.prop(temporal_denoiser_status, "percent_complete")
+                sidtdenoise.operator("object.superimagedenoisealign_stop", icon='CANCEL')
+            else:
+                sidtdenoise.operator("object.superimagedenoisealign", icon='SHADERFX')
 
 
         elif denoiser_type == "TEMPORAL" and is_temporal_supported:

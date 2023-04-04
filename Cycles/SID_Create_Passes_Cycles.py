@@ -23,8 +23,9 @@ def create_cycles_passes(
         scene.cycles.use_denoising = False
 
     ##Enable Passes##
-    # Denoising Normal, Denoising Albedo
+    # Denoising Normal, Denoising Albedo, Depth
     view_layer.cycles.denoising_store_passes = True
+    view_layer.use_pass_z = True
     # Diffuse
     view_layer.use_pass_diffuse_direct = True
     view_layer.use_pass_diffuse_indirect = True
