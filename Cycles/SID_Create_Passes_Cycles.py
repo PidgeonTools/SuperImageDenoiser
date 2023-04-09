@@ -1,4 +1,5 @@
 import bpy
+import os
 from bpy.types import Context, Node, NodeSocket, ViewLayer
 from typing import List
 
@@ -211,4 +212,4 @@ def create_cycles_passes(
             temporal_output_file_node.inputs["Depth"]
             )
         settings.inputdir = bpy.path.abspath(settings.inputdir)
-        temporal_output_file_node.base_path = settings.inputdir + "noisy/######" 
+        temporal_output_file_node.base_path = os.path.join(settings.inputdir,"noisy",settings.filename,"######") 

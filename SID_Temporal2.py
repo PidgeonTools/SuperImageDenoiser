@@ -54,6 +54,7 @@ def create_jobs(scene: Scene) -> List[RenderJob]:
         # e.g. "1_view-layer/000001.exr" or "01_view-layer/000001.exr", etc.
         view_layer_directory = f"{layer_counter:0{max_view_layer_digits}}_{slugify(view_layer.name)}"
         filename = "######"
+        settings.filename = view_layer_directory
         filepath = os.path.join(settings.inputdir, "preview", view_layer_directory, filename)
         job = RenderJob(
             filepath = filepath,

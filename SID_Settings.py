@@ -170,6 +170,15 @@ class SID_Settings(PropertyGroup):
         maxlen=1024,
         options=set(), # Not animatable!
         )
+    
+    filename: StringProperty(
+        name="File Name",
+        default= "",
+        description="File",
+        subtype='DIR_PATH',
+        maxlen=1024,
+        options=set(), # Not animatable!
+        )
 
     use_emission: BoolProperty(
         name="Emission",
