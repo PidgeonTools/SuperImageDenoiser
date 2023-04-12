@@ -43,7 +43,6 @@ def create_jobs(scene: Scene) -> List[RenderJob]:
     jobs: List[RenderJob] = []
 
     # number of digits required to represent a decimal number (e.g. 42 -> 2)
-    max_view_layer_digits = ceil(log10(len(scene.view_layers)))
     layer_counter = 0
     for view_layer in scene.view_layers:
         layer_counter += 1
@@ -51,8 +50,8 @@ def create_jobs(scene: Scene) -> List[RenderJob]:
         if not view_layer.use:
             continue
 
-        # e.g. "1_view-layer/000001.exr" or "01_view-layer/000001.exr", etc.
-        view_layer_directory = f"{layer_counter:0{max_view_layer_digits}}_{slugify(view_layer.name)}"
+        # e.g. "1/000001.exr" or "01/000001.exr", etc.
+        view_layer_directory = f"{layer_counter}"
         filename = "######"
         settings.filename = view_layer_directory
         filepath = os.path.join(settings.inputdir, "preview", view_layer_directory, filename)
@@ -277,6 +276,8 @@ class SIDT_OT_Denoise(Operator):
         settings: SID_Settings = scene.sid_settings
         temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
 
+        tests = 0
+
         if event.type == 'ESC':
             self.stop = True
 
@@ -305,14 +306,15 @@ class SIDT_OT_Denoise(Operator):
 
                 job = self.jobs[0]
 
-                self.start_job(context, job)
+                self.start_job(context, job, tests)
 
                 temporal_denoiser_status.jobs_done += 1
                 temporal_denoiser_status.jobs_remaining -= 1
 
+            print("ENTERING FIRST LOOP ", tests)
         return {'PASS_THROUGH'}
 
-    def start_job(self, context: Context, job: RenderJob):
+    def start_job(self, context: Context, job: RenderJob, iteration):
         self.current_job = job
         self.done = False
         self.running = True
@@ -329,7 +331,17 @@ class SIDT_OT_Denoise(Operator):
             scene = context.scene
             settings: SID_Settings = scene.sid_settings
             TDScene = bpy.data.scenes[scene.name].copy()
-            create_temporal_setup(TDScene,settings,scene.frame_start)
+
+            for view_layers in TDScene.view_layers:
+                view_layers.use = False
+            
+            view_layers.use = True
+
+            root, dirs, files = next(os.walk(os.path.join(settings.inputdir,"noisy")))
+            for view_layer_id in dirs:
+                print("ENTERING SECOND LOOP ", iteration)
+                create_temporal_setup(TDScene,settings,scene.frame_start,view_layer_id)
+
             bpy.data.scenes.remove(TDScene)
 
             self.done = True

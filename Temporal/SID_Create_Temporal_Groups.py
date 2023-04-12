@@ -298,14 +298,14 @@ def create_temporal_align():
 
     return align_tree
 
-def create_temporal_setup(scene,settings,start_frame):
+def create_temporal_setup(scene,settings,start_frame,view_layer):
     #setup node groups
-    
+    print("CURRENTLY WORKING ON VIEW LAYER: " + view_layer)
     scene.use_nodes = True
     ntree = scene.node_tree
     settings.inputdir = bpy.path.abspath(settings.inputdir)
-    path_noisy = settings.inputdir + "noisy/"
-    path_denoised = settings.inputdir + "denoised/"
+    path_noisy = os.path.join(settings.inputdir, "noisy", f"{view_layer}")
+    path_denoised = os.path.join(settings.inputdir, "denoised", f"{view_layer}")
 
     # Clear Compositor Output
     for node in ntree.nodes:
@@ -322,7 +322,7 @@ def create_temporal_setup(scene,settings,start_frame):
     scene.frame_current = 1
 
     Frame_0 = ntree.nodes.new(type="CompositorNodeImage")
-    Frame_0.image = bpy.data.images.load(path_noisy + str(start_frame).zfill(6) + ".exr")
+    Frame_0.image = bpy.data.images.load(os.path.join(path_noisy , str(start_frame).zfill(6) + ".exr"))
     Frame_0.image.source = "SEQUENCE"
     Frame_0.frame_duration = file_count
     Frame_0.frame_start = start_frame
@@ -365,7 +365,7 @@ def create_temporal_setup(scene,settings,start_frame):
         Frame_1.frame_offset = frame + 1
         Frame_2.frame_offset = frame + 2
 
-        scene.render.filepath = path_denoised + str(frame + start_frame).zfill(6) + ".png"
+        scene.render.filepath = os.path.join(path_denoised, str(frame + start_frame).zfill(6) + ".png")
 
         if (not scene.render.use_overwrite) and os.path.exists(scene.render.filepath):
             print("Overwrite is disabled. Skipping frame " + str(frame + start_frame).zfill(6) + ".exr because it already exists.")

@@ -168,11 +168,12 @@ class SID_Create(Operator):
 
         # Create a denoiser for each View Layer
         viewlayer_displace = 0
-
+        view_layer_id = 0
         view_layer: ViewLayer
         for view_layer in scene.view_layers:
             if not view_layer.use:
                 continue
+            view_layer_id += 1
 
             # Look for existing Render Layer
             renlayers_node: Node = next(
@@ -353,7 +354,7 @@ class SID_Create(Operator):
             ##############
 
             if RenderEngine == 'CYCLES':
-                create_cycles_passes(settings, context, renlayers_node, sid_node, view_layer, output_file_node, connect_sockets, temporal_output_file_node)
+                create_cycles_passes(settings, context, renlayers_node, sid_node, view_layer, output_file_node, connect_sockets, temporal_output_file_node, view_layer_id)
 
             ###############
             ### LUXCORE ###

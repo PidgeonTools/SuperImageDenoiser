@@ -13,11 +13,13 @@ def create_cycles_passes(
         view_layer: ViewLayer,
         output_file_node: Node,
         connect_sockets: List[NodeSocket],
-        temporal_output_file_node: Node
+        temporal_output_file_node: Node,
+        view_layer_id: int
         ):
 
     scene = context.scene
     ntree = scene.node_tree
+    scene.use_nodes = True
 
     # Turn off built-in OpenImageDenoiser
     if hasattr(scene.cycles, 'use_denoising'):
@@ -212,4 +214,4 @@ def create_cycles_passes(
             temporal_output_file_node.inputs["Depth"]
             )
         settings.inputdir = bpy.path.abspath(settings.inputdir)
-        temporal_output_file_node.base_path = os.path.join(settings.inputdir,"noisy",settings.filename,"######") 
+        temporal_output_file_node.base_path = os.path.join(settings.inputdir,"noisy",f"{view_layer_id}","######") 
