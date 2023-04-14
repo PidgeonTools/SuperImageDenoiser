@@ -176,17 +176,9 @@ def create_temporal_align():
 
     align_tree.outputs.new("NodeSocketColor", "Temporal Aligned")
 
-    displace_vector_0 = align_tree.nodes.new(type="CompositorNodeDisplace")
-    displace_vector_0.inputs["X Scale"].default_value = -1
-    displace_vector_0.inputs["Y Scale"].default_value = -1
-
     displace_frame_0 = align_tree.nodes.new(type="CompositorNodeDisplace")
     displace_frame_0.inputs["X Scale"].default_value = -1
     displace_frame_0.inputs["Y Scale"].default_value = -1
-    
-    displace_vector_2 = align_tree.nodes.new(type="CompositorNodeDisplace")
-    displace_vector_2.inputs["X Scale"].default_value = 1
-    displace_vector_2.inputs["Y Scale"].default_value = 1
 
     displace_frame_2 = align_tree.nodes.new(type="CompositorNodeDisplace")
     displace_frame_2.inputs["X Scale"].default_value = 1
@@ -204,6 +196,8 @@ def create_temporal_align():
     median_max_a = align_tree.nodes.new("CompositorNodeGroup")
     median_max_a.node_tree = create_temporal_median(False)
 
+    alpha_over = align_tree.nodes.new("CompositorNodeAlphaOver")
+
     vecblur_node = align_tree.nodes.new("CompositorNodeVecBlur")
     vecblur_node.mute = not settings.SIDT_MB_Toggle
     vecblur_node.samples = settings.SIDT_MB_Samples
@@ -216,71 +210,70 @@ def create_temporal_align():
 
     # Link nodes
     align_tree.links.new(
-        align_tree_input.outputs["Vector + 0"],
-        displace_vector_0.inputs[0]
-        )
-    align_tree.links.new(
-        align_tree_input.outputs["Vector + 1"],
-        displace_vector_0.inputs[1]
-        )
-    align_tree.links.new(
         align_tree_input.outputs["Frame + 0"],
         displace_frame_0.inputs[0]
         )
     align_tree.links.new(
-        displace_vector_0.outputs[0],
+        align_tree_input.outputs["Vector + 0"],
         displace_frame_0.inputs[1]
         )
-    align_tree.links.new(
-        align_tree_input.outputs["Frame + 1"],
-        median_max_0.inputs[0]
-        )
-    align_tree.links.new(
-        align_tree_input.outputs["Frame + 1"],
-        median_min_2.inputs[0]
-        ) 
-    align_tree.links.new(
-        align_tree_input.outputs["Vector + 1"],
-        displace_vector_2.inputs[0]
-        )
-    align_tree.links.new(
-        align_tree_input.outputs["Vector + 2"],
-        displace_vector_2.inputs[1]
-        )
+    
     align_tree.links.new(
         align_tree_input.outputs["Frame + 2"],
         displace_frame_2.inputs[0]
         )
     align_tree.links.new(
-        displace_vector_2.outputs[0],
+        align_tree_input.outputs["Vector + 2"],
         displace_frame_2.inputs[1]
         )
+    
     align_tree.links.new(
-        displace_frame_0.outputs[0],
-        median_min_a.inputs[1]
+        align_tree_input.outputs["Frame + 1"],
+        median_max_0.inputs[0]
         )
     align_tree.links.new(
         displace_frame_2.outputs[0],
         median_max_0.inputs[1]
         )
+    
+    align_tree.links.new(
+        align_tree_input.outputs["Frame + 1"],
+        median_min_2.inputs[0]
+        )
     align_tree.links.new(
         displace_frame_2.outputs[0],
         median_min_2.inputs[1]
         )
+    
     align_tree.links.new(
         median_max_0.outputs[0],
         median_min_a.inputs[0]
         )
     align_tree.links.new(
-        median_min_2.outputs[0],
-        median_max_a.inputs[1]
+        displace_frame_0.outputs[0],
+        median_min_a.inputs[1]
         )
+    
     align_tree.links.new(
         median_min_a.outputs[0],
         median_max_a.inputs[0]
         )
     align_tree.links.new(
+        median_min_2.outputs[0],
+        median_max_a.inputs[1]
+        )
+    
+    align_tree.links.new(
+        align_tree_input.outputs["Frame + 1"],
+        alpha_over.inputs[1]
+        )
+    align_tree.links.new(
         median_max_a.outputs[0],
+        alpha_over.inputs[2]
+        )
+    
+    align_tree.links.new(
+        alpha_over.outputs[0],
         vecblur_node.inputs[0]
         )
     align_tree.links.new(
@@ -291,6 +284,7 @@ def create_temporal_align():
         align_tree_input.outputs["Vector + 1"],
         vecblur_node.inputs[2]
         )
+    
     align_tree.links.new(
         vecblur_node.outputs[0],
         align_tree_output.inputs["Temporal Aligned"]
@@ -327,16 +321,19 @@ def create_temporal_setup(scene,settings,view_layer_id):
     Frame_0.image.source = "SEQUENCE"
     Frame_0.frame_duration = file_count
     Frame_0.frame_start = old_frame_start
+    Frame_0.frame_offset = 0
 
     Frame_1 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_1.image = Frame_0.image
     Frame_1.frame_duration = Frame_0.frame_duration
     Frame_1.frame_start = Frame_0.frame_start
+    Frame_1.frame_offset = 1
 
     Frame_2 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_2.image = Frame_0.image
     Frame_2.frame_duration = Frame_0.frame_duration
     Frame_2.frame_start = Frame_0.frame_start
+    Frame_2.frame_offset = 2
 
     TempAlign = ntree.nodes.new("CompositorNodeGroup")
     TempAlign.node_tree = create_temporal_align()
@@ -344,15 +341,15 @@ def create_temporal_setup(scene,settings,view_layer_id):
     OutputNode = ntree.nodes.new(type="CompositorNodeComposite")
 
     #link frame_0 node with tempalign node in the compositor
-    ntree.links.new(Frame_0.outputs[2], TempAlign.inputs[0])
-    ntree.links.new(Frame_0.outputs[1], TempAlign.inputs[1])
+    ntree.links.new(Frame_0.outputs["Image"], TempAlign.inputs["Frame + 0"])
+    ntree.links.new(Frame_0.outputs["Vector"], TempAlign.inputs["Vector + 0"])
     
-    ntree.links.new(Frame_1.outputs[2], TempAlign.inputs[2])
-    ntree.links.new(Frame_1.outputs[1], TempAlign.inputs[3])
-    ntree.links.new(Frame_1.outputs[0], TempAlign.inputs[4])
+    ntree.links.new(Frame_1.outputs["Image"], TempAlign.inputs["Frame + 1"])
+    ntree.links.new(Frame_1.outputs["Vector"], TempAlign.inputs["Vector + 1"])
+    ntree.links.new(Frame_1.outputs["Depth"], TempAlign.inputs["Depth + 1"])
     
-    ntree.links.new(Frame_2.outputs[2], TempAlign.inputs[5])
-    ntree.links.new(Frame_2.outputs[1], TempAlign.inputs[6])
+    ntree.links.new(Frame_2.outputs["Image"], TempAlign.inputs["Frame + 2"])
+    ntree.links.new(Frame_2.outputs["Vector"], TempAlign.inputs["Vector + 2"])
 
     ntree.links.new(TempAlign.outputs[0], OutputNode.inputs[0])
 
