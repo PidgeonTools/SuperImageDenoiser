@@ -14,6 +14,7 @@ from typing import List, NamedTuple
 class RenderJob(NamedTuple):
     filepath: str
     view_layer: ViewLayer
+    view_layer_id: int
 
 def setup_render_settings(context: Context, view_layer: ViewLayer, filepath: str):
     scene = context.scene
@@ -57,7 +58,8 @@ def create_jobs(scene: Scene) -> List[RenderJob]:
         filepath = os.path.join(settings.inputdir, "preview", view_layer_directory, filename)
         job = RenderJob(
             filepath = filepath,
-            view_layer = view_layer
+            view_layer = view_layer,
+            view_layer_id = layer_counter
         )
         jobs.append(job)
 
@@ -276,8 +278,6 @@ class SIDT_OT_Denoise(Operator):
         settings: SID_Settings = scene.sid_settings
         temporal_denoiser_status: SID_TemporalDenoiserStatus = settings.temporal_denoiser_status
 
-        tests = 0
-
         if event.type == 'ESC':
             self.stop = True
 
@@ -306,15 +306,14 @@ class SIDT_OT_Denoise(Operator):
 
                 job = self.jobs[0]
 
-                self.start_job(context, job, tests)
+                self.start_job(context, job)
 
                 temporal_denoiser_status.jobs_done += 1
                 temporal_denoiser_status.jobs_remaining -= 1
 
-            print("ENTERING FIRST LOOP ", tests)
         return {'PASS_THROUGH'}
 
-    def start_job(self, context: Context, job: RenderJob, iteration):
+    def start_job(self, context: Context, job: RenderJob):
         self.current_job = job
         self.done = False
         self.running = True
@@ -337,10 +336,7 @@ class SIDT_OT_Denoise(Operator):
             
             view_layers.use = True
 
-            root, dirs, files = next(os.walk(os.path.join(settings.inputdir,"noisy")))
-            for view_layer_id in dirs:
-                print("ENTERING SECOND LOOP ", iteration)
-                create_temporal_setup(TDScene,settings,scene.frame_start,view_layer_id)
+            create_temporal_setup(TDScene,settings,job.view_layer_id)
 
             bpy.data.scenes.remove(TDScene)
 

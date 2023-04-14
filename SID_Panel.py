@@ -60,7 +60,7 @@ class SID_PT_Panel:
     bl_options = {"DEFAULT_CLOSED"}
 
 class SID_PT_SID_Panel(SID_PT_Panel, Panel):
-    bl_label = "Create Super Denoiser"
+    bl_label = "Create Super Image Denoiser"
 
     def draw_header(self, context: Context):
         layout = self.layout
@@ -401,6 +401,13 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             fileio = layout.column(align=True)
             fileio.active = panel_active
             fileio.label(text="Image Save:")
+            fileio.prop(
+                settings,
+                "SIDT_OUT_Format",
+                expand=False,
+                text="Final output file format"
+                )
+            fileio.separator()
             fileio.prop(settings, "inputdir", text="Image directory")
             fileio.separator()
             fileio.prop(settings, "SIDT_OUT_Compressed")

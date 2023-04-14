@@ -298,14 +298,14 @@ def create_temporal_align():
 
     return align_tree
 
-def create_temporal_setup(scene,settings,start_frame,view_layer):
+def create_temporal_setup(scene,settings,view_layer_id):
     #setup node groups
-    print("CURRENTLY WORKING ON VIEW LAYER: " + view_layer)
+    print("CURRENTLY WORKING ON VIEW LAYER: " + f"{view_layer_id}")
     scene.use_nodes = True
     ntree = scene.node_tree
     settings.inputdir = bpy.path.abspath(settings.inputdir)
-    path_noisy = os.path.join(settings.inputdir, "noisy", f"{view_layer}")
-    path_denoised = os.path.join(settings.inputdir, "denoised", f"{view_layer}")
+    path_noisy = os.path.join(settings.inputdir, "noisy", f"{view_layer_id}")
+    path_denoised = os.path.join(settings.inputdir, "denoised", f"{view_layer_id}")
 
     # Clear Compositor Output
     for node in ntree.nodes:
@@ -317,15 +317,16 @@ def create_temporal_setup(scene,settings,start_frame,view_layer):
         if file.endswith(".exr"):
             file_count += 1
 
+    old_frame_start = scene.frame_start
     scene.frame_start = 1
     scene.frame_end = file_count
     scene.frame_current = 1
 
     Frame_0 = ntree.nodes.new(type="CompositorNodeImage")
-    Frame_0.image = bpy.data.images.load(os.path.join(path_noisy , str(start_frame).zfill(6) + ".exr"))
+    Frame_0.image = bpy.data.images.load(os.path.join(path_noisy , str(old_frame_start).zfill(6) + ".exr"))
     Frame_0.image.source = "SEQUENCE"
     Frame_0.frame_duration = file_count
-    Frame_0.frame_start = start_frame
+    Frame_0.frame_start = old_frame_start
 
     Frame_1 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_1.image = Frame_0.image
@@ -357,18 +358,22 @@ def create_temporal_setup(scene,settings,start_frame,view_layer):
 
     #go through each file and render frame
 
-    for frame in range(0, file_count - 2):
-        
-        scene.frame_current = frame
+    scene.render.filepath = os.path.join(path_denoised, "######")
+    scene.render.image_settings.file_format = settings.SIDT_OUT_Format
 
-        Frame_0.frame_offset = frame
-        Frame_1.frame_offset = frame + 1
-        Frame_2.frame_offset = frame + 2
+    if settings.SIDT_OUT_Format == "PNG":
+        scene.render.image_settings.color_mode = 'RGBA'
+        scene.render.image_settings.color_depth = '8'
+        scene.render.image_settings.compression = 0
 
-        scene.render.filepath = os.path.join(path_denoised, str(frame + start_frame).zfill(6) + ".png")
+    elif settings.SIDT_OUT_Format == "JPEG":
+        scene.render.image_settings.color_mode = 'RGB'
+        scene.render.image_settings.quality = 90
 
-        if (not scene.render.use_overwrite) and os.path.exists(scene.render.filepath):
-            print("Overwrite is disabled. Skipping frame " + str(frame + start_frame).zfill(6) + ".exr because it already exists.")
-        else:
-            bpy.ops.render.render(animation = False, write_still = True, scene = scene.name)
-        
+    elif settings.SIDT_OUT_Format == "OPEN_EXR":
+        scene.render.image_settings.color_mode = 'RGBA'
+        scene.render.image_settings.color_depth = '32'
+        scene.render.image_settings.exr_codec = 'ZIP'
+
+    bpy.ops.render.render(animation = True, scene = scene.name)
+

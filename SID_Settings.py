@@ -125,12 +125,12 @@ class SID_Settings(PropertyGroup):
             (
                 'SID TEMPORAL',
                 'SID Temporal',
-                'Temporal Super Image Denoiser'
+                'Temporal Animation Denoiser using Super Image Denoiser'
             ),
             (
                 'TEMPORAL',
-                'Temporal',
-                'Temporal Animation Denoiser'
+                'OptiX Temporal',
+                'Temporal Animation Denoiser using OptiX'
             ),
         ),
         default='SID',
@@ -304,6 +304,30 @@ class SID_Settings(PropertyGroup):
         name="Generate Preview Images",
         default=True,
         description="Saves preview images of the SID-Denoised frames,\nthese are not used by the temporal denoiser!\nThey are only used for previewing the rendered frames",
+        options=set(), # Not animatable!
+        )
+        
+    SIDT_OUT_Format: EnumProperty(
+        name="File Output",
+        items=(
+            (
+                'PNG',
+                'PNG',
+                "This is the slowest option\nsuiteable for final rendering.\nExports as 8bit RGBA PNG, 0% compression.\nWarning: no compression!"
+            ),
+            (
+                'JPEG',
+                'JPEG',
+                "This is the smallest file size and fastest processing option.\nsuiteable for previewing.\nExports as RGB JPG, 90% quality.\nWarning: lossy compression, may cause JPEG artifacts!"
+            ),
+            (
+                'OPEN_EXR',
+                'EXR',
+                "This is the highest quality option\nsuiteable if you want to edit the frames later.\nExports as 32bit RGBA EXR, zip compression.\nWarning: this will use a lot of disk space!"
+            ),
+        ),
+        default='PNG',
+        description="Choose the file format step 2 will output.",
         options=set(), # Not animatable!
         )
 
