@@ -300,12 +300,6 @@ class SID_Settings(PropertyGroup):
         options=set(), # Not animatable!
         )
     
-    SIDT_OUT_Preview: BoolProperty(
-        name="Generate Preview Images",
-        default=True,
-        description="Saves preview images of the SID-Denoised frames,\nthese are not used by the temporal denoiser!\nThey are only used for previewing the rendered frames",
-        options=set(), # Not animatable!
-        )
         
     SIDT_OUT_Format: EnumProperty(
         name="File Output",
@@ -328,6 +322,22 @@ class SID_Settings(PropertyGroup):
         ),
         default='PNG',
         description="Choose the file format step 2 will output.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_AutoOverscan: BoolProperty(
+        name="Automatic overscan value",
+        default=True,
+        description="Automatically calculate the overscan value based on the camera's motion.\nCurrently disabled, because I haven't implemented it yet.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_Overscan: IntProperty(
+        name="Overscan",
+        default=5,
+        min=0,
+        max=20,
+        description="Overscan is the amount of pixels that are rendered outside of the camera's view,\nthis is used to reduce the amount of artifacts at the edges of the image.\nThis is a percentage of the image's width and height.\nThe faster the camera movement, the higher the overscan should be.",
         options=set(), # Not animatable!
         )
 

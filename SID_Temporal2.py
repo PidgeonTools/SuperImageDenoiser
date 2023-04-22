@@ -10,34 +10,55 @@ from .SuperImageDenoiser import SID_Create
 from typing import List, NamedTuple
 
 # disable uneeded passes for better performance
+class SavedRenderSettings(NamedTuple):
+    old_file_format: str
+    old_color_mode: str
+    old_color_depth: str
+    old_file_path: str
+    old_lens: float
+    old_res: int
 
 class RenderJob(NamedTuple):
     filepath: str
     view_layer: ViewLayer
     view_layer_id: int
 
-def setup_render_settings(context: Context, view_layer: ViewLayer, filepath: str):
+def save_render_settings(context: Context):
     scene = context.scene
+
+    return SavedRenderSettings(
+        old_file_format = scene.render.image_settings.file_format,
+        old_color_mode = scene.render.image_settings.color_mode,
+        old_color_depth = scene.render.image_settings.color_depth,
+        old_file_path = scene.render.filepath,
+        old_lens = scene.camera.data.lens,
+        old_res = scene.render.resolution_percentage
+    )
+
+def restore_render_settings(context: Context,savedsettings: SavedRenderSettings):
+    scene = context.scene
+
+    scene.render.image_settings.file_format = savedsettings.old_file_format
+    scene.render.image_settings.color_mode = savedsettings.old_color_mode
+    scene.render.image_settings.color_depth = savedsettings.old_color_depth
+    scene.render.filepath = savedsettings.old_file_path
+    scene.camera.data.lens = savedsettings.old_lens
+    scene.render.resolution_percentage = savedsettings.old_res
+
+def setup_render_settings(context: Context):
+    scene = context.scene
+    settings: SID_Settings = scene.sid_settings
+    
 
     ### Setup scene and view layer ###
     # image output
     scene.render.image_settings.file_format = 'PNG'
     scene.render.image_settings.color_mode = 'RGBA'
     scene.render.image_settings.color_depth = '8'
-
-def slugify(value: str) -> str:
-    """
-    Converts to ASCII. Converts spaces and repeated dashes to single dashes.
-    Removes characters that aren't alphanumeric, underscores, or hyphens.
-    Converts to lowercase. Also strips leading and trailing whitespace, dashes,
-    and underscores.
-    Taken from https://stackoverflow.com/a/295466
-    """
-    value = str(value)
-    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
-    value = re.sub(r'[^\w\s-]', '', value.lower())
-    return re.sub(r'[-\s]+', '-', value).strip('-_')
-
+    scene.render.filepath = os.path.join(settings.inputdir,"preview")
+    scene.camera.data.lens = scene.camera.data.lens * (1-(((100 + settings.SIDT_Overscan) / 100)-1))
+    scene.render.resolution_percentage = ceil(scene.render.resolution_percentage * ((100 + settings.SIDT_Overscan) / 100))
+        
 def create_jobs(scene: Scene) -> List[RenderJob]:
     settings: SID_Settings = scene.sid_settings
 
@@ -166,11 +187,16 @@ class SIDT_OT_Render(Operator):
                 denoise_render_status.should_stop = False
                 denoise_render_status.is_rendering = False
 
+                if self.current_job:
+                    self.cleanup_job(context)
+                    
                 if was_cancelled:
                     return {'CANCELLED'}
                 return {'FINISHED'}
 
             elif self.done or not self.current_job:
+                if self.current_job:
+                    self.cleanup_job(context)
 
                 job = self.jobs[0]
 
@@ -190,14 +216,19 @@ class SIDT_OT_Render(Operator):
         view_layer = job.view_layer
         filepath = job.filepath
 
+        self.saved_settings = save_render_settings(context)
+
         ### Setup scene and view layer ###
-        setup_render_settings(context, view_layer, filepath)
+        setup_render_settings(context)
 
         ### Render ###
         print(f"Rendering View Layer '{view_layer.name}' animation to: {scene.render.filepath}")
 
         SID_Create.execute(self, context)
         bpy.ops.render.render("INVOKE_DEFAULT", animation=True)
+        
+    def cleanup_job(self, context: Context):
+        restore_render_settings(context, self.saved_settings)
 
 class SIDT_OT_StopRender(Operator):
     bl_idname = "object.superimagedenoisetemporal_stop"
@@ -319,11 +350,6 @@ class SIDT_OT_Denoise(Operator):
         self.running = True
 
         scene = context.scene
-        view_layer = job.view_layer
-        filepath = job.filepath
-
-        ### Setup scene and view layer ###
-        setup_render_settings(context, view_layer, filepath)
 
         ### Denoise ###
         try:

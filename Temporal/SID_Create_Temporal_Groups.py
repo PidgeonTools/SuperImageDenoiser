@@ -1,6 +1,7 @@
 import bpy
 import os
-from bpy.types import NodeTree, Node, NodeLink, NodeSocket
+from math import ceil
+from bpy.types import NodeTree, Node, NodeLink
 from typing import Callable
 from ..SID_Settings import SID_Settings
 
@@ -206,6 +207,24 @@ def create_temporal_align():
     vecblur_node.speed_max = settings.SIDT_MB_Max
     vecblur_node.use_curved = settings.SIDT_MB_Interpolation
 
+    if settings.SIDT_Overscan > 0:
+        render = bpy.context.scene.render
+        overscan_percentage = ceil(render.resolution_percentage * (100 + settings.SIDT_Overscan) / 100)
+        crop_aspect = (1 - (render.resolution_x * render.resolution_percentage / 100) / (render.resolution_x * overscan_percentage / 100)) / 2
+
+        crop_node = align_tree.nodes.new("CompositorNodeCrop")
+        crop_node.use_crop_size = True
+        crop_node.relative = True
+        crop_node.rel_min_x = crop_aspect
+        crop_node.rel_max_x = 1 - crop_aspect
+        crop_node.rel_min_y = crop_node.rel_min_x
+        crop_node.rel_max_y = crop_node.rel_max_x
+
+        scale_node = align_tree.nodes.new("CompositorNodeScale")
+        scale_node.space = "ABSOLUTE"
+        scale_node.inputs[1].default_value = render.resolution_x * render.resolution_percentage / 100
+        scale_node.inputs[2].default_value = render.resolution_y * render.resolution_percentage / 100
+
     align_tree_output = align_tree.nodes.new("NodeGroupOutput")
 
     # Link nodes
@@ -285,10 +304,26 @@ def create_temporal_align():
         vecblur_node.inputs[2]
         )
     
-    align_tree.links.new(
-        vecblur_node.outputs[0],
-        align_tree_output.inputs["Temporal Aligned"]
-        )
+    if settings.SIDT_Overscan == 0:
+        align_tree.links.new(
+            vecblur_node.outputs[0],
+            align_tree_output.inputs["Temporal Aligned"]
+            )
+    else:
+        align_tree.links.new(
+            vecblur_node.outputs[0],
+            crop_node.inputs[0]
+            )
+        
+        align_tree.links.new(
+            crop_node.outputs[0],
+            scale_node.inputs[0]
+            )
+        
+        align_tree.links.new(
+            scale_node.outputs[0],
+            align_tree_output.inputs["Temporal Aligned"]
+            )
 
     return align_tree
 
@@ -320,20 +355,20 @@ def create_temporal_setup(scene,settings,view_layer_id):
     Frame_0.image = bpy.data.images.load(os.path.join(path_noisy , str(old_frame_start).zfill(6) + ".exr"))
     Frame_0.image.source = "SEQUENCE"
     Frame_0.frame_duration = file_count
-    Frame_0.frame_start = old_frame_start
-    Frame_0.frame_offset = 0
+    Frame_0.frame_start = 1
+    Frame_0.frame_offset = 0 + old_frame_start
 
     Frame_1 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_1.image = Frame_0.image
     Frame_1.frame_duration = Frame_0.frame_duration
     Frame_1.frame_start = Frame_0.frame_start
-    Frame_1.frame_offset = 1
+    Frame_1.frame_offset = 1 + old_frame_start
 
     Frame_2 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_2.image = Frame_0.image
     Frame_2.frame_duration = Frame_0.frame_duration
     Frame_2.frame_start = Frame_0.frame_start
-    Frame_2.frame_offset = 2
+    Frame_2.frame_offset = 2 + old_frame_start
 
     TempAlign = ntree.nodes.new("CompositorNodeGroup")
     TempAlign.node_tree = create_temporal_align()

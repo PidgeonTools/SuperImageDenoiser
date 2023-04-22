@@ -412,11 +412,7 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             fileio.separator()
             fileio.prop(settings, "SIDT_OUT_Compressed")
             fileio.separator()
-            fileio.prop(settings, "SIDT_OUT_Preview")
-            fileio.separator()
-
             fileio.prop(scene.render, "use_overwrite", text="Overwrite existing files")
-
             fileio.separator()
 
             motion_blur = layout.column(align=True)
@@ -427,15 +423,19 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             motion_blur_settings.active = (panel_active and settings.SIDT_MB_Toggle)
             motion_blur_settings.prop(settings, "SIDT_MB_Samples")
             motion_blur_settings.prop(settings, "SIDT_MB_Shutter")
-            motion_blur_settings.label(text="Speed:")
+            motion_blur_settings.separator()
             motion_blur_settings.prop(settings, "SIDT_MB_Min")
             motion_blur_settings.prop(settings, "SIDT_MB_Max")
-            motion_blur_settings.label(text="Interpolation:")
+            motion_blur_settings.separator()
             motion_blur_settings.prop(settings, "SIDT_MB_Interpolation")
-            
+        
             motion_blur_settings.separator()
 
             sidtrender = layout.column(align=True)
+            sidtrender.label(text="Advanced:")
+            sidtrender.prop(settings, "SIDT_AutoOverscan")
+            sidtrender.prop(settings, "SIDT_Overscan")
+            sidtrender.separator()
             sidtrender.active = panel_active
             if is_rendering:
                 sidtrender.label(text=f"{denoise_render_status.jobs_done} / {denoise_render_status.jobs_total} View Layers completed", icon='INFO')
