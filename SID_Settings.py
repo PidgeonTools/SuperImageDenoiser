@@ -296,7 +296,7 @@ class SID_Settings(PropertyGroup):
     SIDT_OUT_Compressed: BoolProperty(
         name="Smaller Working Files",
         default=False,
-        description="Compresses the working files to save space,\nwill use 32bit EXR instead of 64bit",
+        description="Compresses the working files to save space,\nwill use 16bit DWAA EXR (lossy) instead of 32bit ZIP (lossless)",
         options=set(), # Not animatable!
         )
     

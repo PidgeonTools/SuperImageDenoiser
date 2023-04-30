@@ -342,11 +342,12 @@ class SID_Create(Operator):
                 temporal_output_file_node.name = "Temporal Output"
                 temporal_output_file_node.location = (400, viewlayer_displace - 500)
                 temporal_output_file_node.format.file_format = 'OPEN_EXR_MULTILAYER'
-                temporal_output_file_node.format.exr_codec = 'ZIP'
                 if settings.SIDT_OUT_Compressed:
                     temporal_output_file_node.format.color_depth = '16'
+                    temporal_output_file_node.format.exr_codec = 'DWAA'
                 else:
                     temporal_output_file_node.format.color_depth = '32'
+                    temporal_output_file_node.format.exr_codec = 'ZIP'
 
 
             ##############
