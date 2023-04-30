@@ -214,7 +214,6 @@ class SIDT_OT_Render(Operator):
 
         scene = context.scene
         view_layer = job.view_layer
-        filepath = job.filepath
 
         self.saved_settings = save_render_settings(context)
 

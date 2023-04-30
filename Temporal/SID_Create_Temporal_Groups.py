@@ -348,7 +348,7 @@ def create_temporal_setup(scene,settings,view_layer_id):
 
     old_frame_start = scene.frame_start
     scene.frame_start = 1
-    scene.frame_end = file_count
+    scene.frame_end = file_count - 3
     scene.frame_current = 1
 
     Frame_0 = ntree.nodes.new(type="CompositorNodeImage")
