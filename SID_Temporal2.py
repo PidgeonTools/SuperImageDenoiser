@@ -1,9 +1,7 @@
 import bpy
 import os
-import re
-import unicodedata
 from bpy.types import Context, Event, Operator, Scene, Timer, ViewLayer
-from math import ceil, log10
+from math import ceil
 from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
 from .Temporal.SID_Create_Temporal_Groups import create_temporal_setup
 from .SuperImageDenoiser import SID_Create
@@ -56,8 +54,8 @@ def setup_render_settings(context: Context):
     scene.render.image_settings.color_mode = 'RGBA'
     scene.render.image_settings.color_depth = '8'
     scene.render.filepath = os.path.join(settings.inputdir,"preview")
-    scene.camera.data.lens = scene.camera.data.lens * (1-(((100 + settings.SIDT_Overscan) / 100)-1))
-    scene.render.resolution_percentage = ceil(scene.render.resolution_percentage * ((100 + settings.SIDT_Overscan) / 100))
+    scene.camera.data.lens = scene.camera.data.lens * (1-(((100 + settings.SIDT_Overscan_Amount) / 100)-1))
+    scene.render.resolution_percentage = ceil(scene.render.resolution_percentage * ((100 + settings.SIDT_Overscan_Amount) / 100))
         
 def create_jobs(scene: Scene) -> List[RenderJob]:
     settings: SID_Settings = scene.sid_settings
@@ -74,9 +72,8 @@ def create_jobs(scene: Scene) -> List[RenderJob]:
 
         # e.g. "1/000001.exr" or "01/000001.exr", etc.
         view_layer_directory = f"{layer_counter}"
-        filename = "######"
         settings.filename = view_layer_directory
-        filepath = os.path.join(settings.inputdir, "preview", view_layer_directory, filename)
+        filepath = os.path.join(settings.inputdir, "preview", view_layer_directory, "######")
         job = RenderJob(
             filepath = filepath,
             view_layer = view_layer,
@@ -85,6 +82,28 @@ def create_jobs(scene: Scene) -> List[RenderJob]:
         jobs.append(job)
 
     return jobs
+
+def create_render_job(scene: Scene) -> List[RenderJob]:
+    settings: SID_Settings = scene.sid_settings
+
+    jobs: List[RenderJob] = []
+
+    # number of digits required to represent a decimal number (e.g. 42 -> 2)
+    layer_counter = 0
+    for view_layer in scene.view_layers:
+
+        filepath = os.path.join(settings.inputdir, "preview", "######")
+        job = RenderJob(
+            filepath = filepath,
+            view_layer = view_layer,
+            view_layer_id = layer_counter
+        )
+        if layer_counter == 0: jobs.append(job)
+
+        layer_counter += 1
+
+    return jobs
+
 
 def ShowMessageBox(message: str = "", title = "Information", icon = 'INFO'):
 
@@ -142,7 +161,7 @@ class SIDT_OT_Render(Operator):
         self.done = False
 
         # Prepare render jobs
-        self.jobs = create_jobs(scene)
+        self.jobs = create_render_job(scene)
         self.current_job = None
 
         denoise_render_status.is_rendering = True
@@ -198,9 +217,7 @@ class SIDT_OT_Render(Operator):
                 if self.current_job:
                     self.cleanup_job(context)
 
-                job = self.jobs[0]
-
-                self.start_job(context, job)
+                self.start_job(context)
 
                 denoise_render_status.jobs_done += 1
                 denoise_render_status.jobs_remaining -= 1
@@ -208,22 +225,21 @@ class SIDT_OT_Render(Operator):
         # Allow stop button to cancel rendering rather than this modal
         return {'PASS_THROUGH'}
 
-    def start_job(self, context: Context, job: RenderJob):
-        self.current_job = job
+    def start_job(self, context: Context):
         self.done = False
 
         scene = context.scene
-        view_layer = job.view_layer
+        settings: SID_Settings = scene.sid_settings
 
         self.saved_settings = save_render_settings(context)
 
         ### Setup scene and view layer ###
         setup_render_settings(context)
 
-        ### Render ###
-        print(f"Rendering View Layer '{view_layer.name}' animation to: {scene.render.filepath}")
-
         SID_Create.execute(self, context)
+        scene.render.filepath = os.path.join(settings.inputdir,"preview","######")
+
+        print(f"Rendering animation to: {scene.render.filepath}")
         bpy.ops.render.render("INVOKE_DEFAULT", animation=True)
         
     def cleanup_job(self, context: Context):

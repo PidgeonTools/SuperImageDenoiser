@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Super Image Denoiser (SID)",
-    "author": "Kevin Lorengel, Chris Bond (Kamikaze)",
+    "author": "Kevin Lorengel",
     "version": (4, 0, 0),
-    "blender": (2, 83, 0),
+    "blender": (3, 5, 0),
     "location": "Properties > Render > Create Super Denoiser",
     "description": "[BETA] SID denoises your renders near-perfectly, with only one click!",
     "warning": "",

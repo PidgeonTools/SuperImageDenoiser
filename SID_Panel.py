@@ -292,7 +292,7 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             layout.separator()
 
             if settings.quality != "STANDARD":
-                advanced.prop(settings, "use_mlEXR", text="Use Multi-Layer EXR")
+                advanced.prop(settings, "SID_mlEXR", text="Use Multi-Layer EXR")
                 layout.separator()
 
             layout.operator("object.superimagedenoise", icon='SHADERFX')
@@ -403,14 +403,14 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             fileio.label(text="Image Save:")
             fileio.prop(
                 settings,
-                "SIDT_OUT_Format",
+                "SIDT_File_Format",
                 expand=False,
                 text="Final output file format"
                 )
             fileio.separator()
             fileio.prop(settings, "inputdir", text="Image directory")
             fileio.separator()
-            fileio.prop(settings, "SIDT_OUT_Compressed")
+            fileio.prop(settings, "SID_mlEXR_Compressed")
             fileio.separator()
             fileio.prop(scene.render, "use_overwrite", text="Overwrite existing files")
             fileio.separator()
@@ -433,8 +433,10 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
 
             sidtrender = layout.column(align=True)
             sidtrender.label(text="Advanced:")
-            sidtrender.prop(settings, "SIDT_AutoOverscan")
-            sidtrender.prop(settings, "SIDT_Overscan")
+            sidtrender.prop(settings, "SIDT_Overscan_Auto")
+            sidtrender.prop(settings, "SIDT_Overscan_Amount")
+            sidtrender.separator()
+            sidtrender.prop(settings, "SIDT_mlEXR", text="Use Multi-Layer EXR")
             sidtrender.separator()
             sidtrender.active = panel_active
             if is_rendering:
