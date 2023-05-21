@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Super Image Denoiser (SID)",
-    "author": "Kevin Lorengel, Chris Bond (Kamikaze)",
+    "author": "Kevin Lorengel",
     "version": (4, 0, 0),
-    "blender": (2, 83, 0),
+    "blender": (3, 5, 0),
     "location": "Properties > Render > Create Super Denoiser",
     "description": "[BETA] SID denoises your renders near-perfectly, with only one click!",
     "warning": "",
@@ -17,7 +17,7 @@ from bpy.props import (
     PointerProperty,
     )
 from .SuperImageDenoiser import (
-    SID_Create,
+    SID_Create
     )
 
 from .SID_Settings import (
@@ -35,15 +35,20 @@ from .SID_Temporal import (
     TD_OT_Render,
     TD_OT_StopRender,
     TD_OT_Denoise,
-    TD_OT_StopDenoise,
+    TD_OT_StopDenoise
     )
 
-from .SID_Temporal2 import (
-    SIDT_OT_Render,
+from .Temporal.SID_Render_Denoise_Temporal_FG import (
+    SIDT_OT_RenderFG,
     SIDT_OT_StopRender,
-    SIDT_OT_Denoise,
-    SIDT_OT_StopDenoise,
+    SIDT_OT_DenoiseFG,
+    SIDT_OT_StopDenoise
     )
+
+from .Temporal.SID_Render_Denoise_Temporal_BG import (
+    SIDT_OT_RenderBG,
+    SIDT_OT_DenoiseBG
+)
 
 from . import addon_updater_ops
 
@@ -114,9 +119,11 @@ classes = (
     SID_PT_SID_Panel,
     SID_PT_SOCIALS_Panel,
     SID_Create,
-    SIDT_OT_Render,
+    SIDT_OT_RenderFG,
+    SIDT_OT_RenderBG,
     SIDT_OT_StopRender,
-    SIDT_OT_Denoise,
+    SIDT_OT_DenoiseFG,
+    SIDT_OT_DenoiseBG,
     SIDT_OT_StopDenoise,
     TD_OT_Render,
     TD_OT_StopRender,

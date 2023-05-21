@@ -208,38 +208,17 @@ class SID_Settings(PropertyGroup):
         options=set(), # Not animatable!
         )
 
-    use_refraction: BoolProperty(
-        name="Refraction",
-        default=False,
-        description="Enable this if you have refractive materials in your scene",
-        options=set(), # Not animatable!
-        )
-
-    use_sss: BoolProperty(
-        name="SSS",
-        default=False,
-        description="Enable this if you have SSS materials in your scene",
-        options=set(), # Not animatable!
-        )
-
-    compositor_reset: BoolProperty(
-        name="CompositorReset",
-        default=True,
-        description="Refreshes SID instead of adding another node group",
-        options=set(), # Not animatable!
-        )
-
-    use_mlEXR: BoolProperty(
+    SID_mlEXR: BoolProperty(
         name="MultiLayerEXR",
         default=False,
         description="Export a denoised MultiLayer EXR file",
         options=set(), # Not animatable!
         )
-
-    use_caustics: BoolProperty(
-        name="Caustics",
-        default=True,
-        description="Enable this if you have caustics in your Scene",
+    
+    SID_mlEXR_Compressed: BoolProperty(
+        name="Smaller EXR Files",
+        default=False,
+        description="Compresses the EXR files to save space,\nwill use 16bit DWAA EXR (lossy) instead of 32bit ZIP (lossless)",
         options=set(), # Not animatable!
         )
 
@@ -292,16 +271,8 @@ class SID_Settings(PropertyGroup):
         description="Interpolate between frames in a bezier curve, rather than linearly",
         options=set(), # Not animatable!
         )
-    
-    SIDT_OUT_Compressed: BoolProperty(
-        name="Smaller Working Files",
-        default=False,
-        description="Compresses the working files to save space,\nwill use 16bit DWAA EXR (lossy) instead of 32bit ZIP (lossless)",
-        options=set(), # Not animatable!
-        )
-    
         
-    SIDT_OUT_Format: EnumProperty(
+    SIDT_File_Format: EnumProperty(
         name="File Output",
         items=(
             (
@@ -325,19 +296,75 @@ class SID_Settings(PropertyGroup):
         options=set(), # Not animatable!
         )
     
-    SIDT_AutoOverscan: BoolProperty(
+    SIDT_Overscan_Auto: BoolProperty(
         name="Automatic overscan value",
         default=True,
         description="Automatically calculate the overscan value based on the camera's motion.\nCurrently disabled, because I haven't implemented it yet.",
         options=set(), # Not animatable!
         )
     
-    SIDT_Overscan: IntProperty(
+    SIDT_Overscan_Amount: IntProperty(
         name="Overscan",
         default=5,
         min=0,
         max=20,
         description="Overscan is the amount of pixels that are rendered outside of the camera's view,\nthis is used to reduce the amount of artifacts at the edges of the image.\nThis is a percentage of the image's width and height.\nThe faster the camera movement, the higher the overscan should be.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_mlEXR: BoolProperty(
+        name="MultiLayerEXR",
+        default=False,
+        description="Export a denoised MultiLayer EXR file.\nThis setting takes a lot of disk space!",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_Preview: BoolProperty(
+        name="Preview",
+        default=False,
+        description="View the render while it's being rendered.\nNot recommended.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_TED_Filter_Threshold: FloatProperty(
+        name="Filter Threshold",
+        default=3,
+        min=0,
+        max=50,
+        description="The higher, the more agressive the TED-Filter will be.\nThe TED-Filter detects artifacts caused by fast movement.\nWe recommend a value between 2 and 5 for most scenes.\nA value of 0 will disable the filter.",
+        options=set(), # Not animatable!
+        )
+
+    SIDT_TED_Filter_Distance: IntProperty(
+        name="Filter Radius",
+        default=3,
+        min=0,
+        max=10,
+        description="The higher, the more feathering the TED-Filter will have.\nThis value determins how smooth the transition of the TED-Filter should be.\nWe recommend a value between 2 and 5 for most scenes.\nA value of 0 will disable the filter.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_TED_Filter_Source: EnumProperty(
+        name="Filter Source",
+        items=(
+            (
+                'Temporal Albedo',
+                'Color',
+                "This will use the color of the surfaces to detect artifacts.\nUse this option if your scene has changes in lighting, reflections or shadows."
+            ),
+            (
+                'Image',
+                'Shaded',
+                "This will use the shaded image to detect artifacts.\nUse this option if your scene has a lot of solid colored materials,\nlike a white wall, Leaves, Grass, etc."
+            ),
+            (
+                'Depth',
+                'Depth',
+                "This will use the depth of the image to detect artifacts.\nWe recommend this option if your scene has a lot of transparent materials,\nlike glass, water, etc.\nWarning: this option is experimental! If you get good results, please let us know!"
+            )
+        ),
+        default='Image',
+        description="Chose the source the TED-Filter will use to detect artifacts.",
         options=set(), # Not animatable!
         )
 
