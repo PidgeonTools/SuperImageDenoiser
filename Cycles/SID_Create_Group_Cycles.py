@@ -53,6 +53,39 @@ def create_cycles_group(
     sid_super_group.outputs.new("NodeSocketColor", "High Quality")
     sid_super_group.outputs.new("NodeSocketColor", "SUPER Quality")
 
+    # Temporal Albedo
+    if settings.denoiser_type == 'SID TEMPORAL':
+        temporal_di_add = sid_super_group.nodes.new("CompositorNodeMixRGB")
+        temporal_di_add.blend_type = "MIX"
+        temporal_di_add.inputs[0].default_value = 0
+        sid_super_group.links.new(input_node.outputs['DiffCol'],temporal_di_add.inputs[1])
+        lastNode = temporal_di_add
+
+        if settings.use_transmission:
+            temporal_tr_add = sid_super_group.nodes.new("CompositorNodeMixRGB")
+            temporal_tr_add.blend_type = "ADD"
+            sid_super_group.links.new(input_node.outputs['TransCol'],temporal_tr_add.inputs[1])
+            sid_super_group.links.new(lastNode.outputs[0],temporal_tr_add.inputs[2])
+            lastNode = temporal_tr_add
+        
+        if settings.use_emission:
+            temporal_em_add = sid_super_group.nodes.new("CompositorNodeMixRGB")
+            temporal_em_add.blend_type = "ADD"
+            sid_super_group.links.new(input_node.outputs['Emit'],temporal_em_add.inputs[1])
+            sid_super_group.links.new(lastNode.outputs[0],temporal_em_add.inputs[2])
+            lastNode = temporal_em_add
+        
+        if settings.use_environment:
+            temporal_env_add = sid_super_group.nodes.new("CompositorNodeMixRGB")
+            temporal_env_add.blend_type = "ADD"
+            sid_super_group.links.new(input_node.outputs['Env'],temporal_env_add.inputs[1])
+            sid_super_group.links.new(lastNode.outputs[0],temporal_env_add.inputs[2])
+            lastNode = temporal_env_add
+        
+        sid_super_group.outputs.new("NodeSocketColor", "Temporal Albedo")
+        sid_super_group.links.new(lastNode.outputs[0],output_node.inputs['Temporal Albedo'])
+
+
     # mlEXR
     sid_super_group.outputs.new("NodeSocketColor", "DN Diffuse")
     sid_super_group.outputs.new("NodeSocketColor", 'DN Glossy')

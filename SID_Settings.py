@@ -318,6 +318,55 @@ class SID_Settings(PropertyGroup):
         description="Export a denoised MultiLayer EXR file.\nThis setting takes a lot of disk space!",
         options=set(), # Not animatable!
         )
+    
+    SIDT_Preview: BoolProperty(
+        name="Preview",
+        default=False,
+        description="View the render while it's being rendered.\nNot recommended.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_TED_Filter_Threshold: FloatProperty(
+        name="Filter Threshold",
+        default=3,
+        min=0,
+        max=50,
+        description="The higher, the more agressive the TED-Filter will be.\nThe TED-Filter detects artifacts caused by fast movement.\nWe recommend a value between 2 and 5 for most scenes.\nA value of 0 will disable the filter.",
+        options=set(), # Not animatable!
+        )
+
+    SIDT_TED_Filter_Distance: IntProperty(
+        name="Filter Radius",
+        default=3,
+        min=0,
+        max=10,
+        description="The higher, the more feathering the TED-Filter will have.\nThis value determins how smooth the transition of the TED-Filter should be.\nWe recommend a value between 2 and 5 for most scenes.\nA value of 0 will disable the filter.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_TED_Filter_Source: EnumProperty(
+        name="Filter Source",
+        items=(
+            (
+                'Temporal Albedo',
+                'Color',
+                "This will use the color of the surfaces to detect artifacts.\nUse this option if your scene has changes in lighting, reflections or shadows."
+            ),
+            (
+                'Image',
+                'Shaded',
+                "This will use the shaded image to detect artifacts.\nUse this option if your scene has a lot of solid colored materials,\nlike a white wall, Leaves, Grass, etc."
+            ),
+            (
+                'Depth',
+                'Depth',
+                "This will use the depth of the image to detect artifacts.\nWe recommend this option if your scene has a lot of transparent materials,\nlike glass, water, etc.\nWarning: this option is experimental! If you get good results, please let us know!"
+            )
+        ),
+        default='Image',
+        description="Chose the source the TED-Filter will use to detect artifacts.",
+        options=set(), # Not animatable!
+        )
 
     # Temporal denoiser part 1: render noisy frames
     denoise_render_status: PointerProperty(

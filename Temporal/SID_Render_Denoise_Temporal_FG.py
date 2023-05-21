@@ -2,9 +2,9 @@ import bpy
 import os
 from bpy.types import Context, Event, Operator, Scene, Timer, ViewLayer
 from math import ceil
-from .SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
-from .Temporal.SID_Create_Temporal_Groups import create_temporal_setup
-from .SuperImageDenoiser import SID_Create
+from ..SID_Settings import SID_DenoiseRenderStatus, SID_Settings, SID_TemporalDenoiserStatus
+from .SID_Create_Temporal_Groups import create_temporal_setup
+from ..SuperImageDenoiser import SID_Create
 from typing import List, NamedTuple
 
 # disable uneeded passes for better performance
@@ -114,7 +114,7 @@ def ShowMessageBox(message: str = "", title = "Information", icon = 'INFO'):
 
     bpy.context.window_manager.popup_menu(draw, title = title, icon = icon)
 
-class SIDT_OT_Render(Operator):
+class SIDT_OT_RenderFG(Operator):
     bl_idname = "object.superimagedenoisetemporal"
     bl_label = "1/2 - Render with SID Temporal"
     bl_description = "Enables all the necessary passes, Creates all the nodes you need, connects them all for you, renders and denoises the frames"
@@ -258,7 +258,7 @@ class SIDT_OT_StopRender(Operator):
 
         return {'FINISHED'}
 
-class SIDT_OT_Denoise(Operator):
+class SIDT_OT_DenoiseFG(Operator):
     bl_idname = "object.superimagedenoisealign"
     bl_label = "2/2 - Denoise with SID Temporal"
     bl_description = "Step two of the Temporal Denoising process. This will align the frames and denoise them."

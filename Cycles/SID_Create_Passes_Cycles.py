@@ -134,6 +134,9 @@ def create_cycles_passes(
         # Depth
         output_file_node.file_slots.new("Depth")
         ntree.links.new(render_layer_node.outputs["Denoising Depth"],output_file_node.inputs["Depth"])
+        # Temporal Albedo
+        output_file_node.file_slots.new("Temporal Albedo")
+        ntree.links.new(sid_node.outputs["Temporal Albedo"],output_file_node.inputs["Temporal Albedo"])
         
         # Set output path
         settings.inputdir = bpy.path.abspath(settings.inputdir)

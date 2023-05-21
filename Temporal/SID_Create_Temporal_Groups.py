@@ -64,11 +64,14 @@ def create_temporal_align() -> NodeTree:
     align_tree_input = align_tree.nodes.new("NodeGroupInput")
 
     align_tree.inputs.new("NodeSocketColor", "Frame + 0")
+    align_tree.inputs.new("NodeSocketColor", "Albedo + 0")
     align_tree.inputs.new("NodeSocketVector", "Vector + 0")
     align_tree.inputs.new("NodeSocketColor", "Frame + 1")
+    align_tree.inputs.new("NodeSocketColor", "Albedo + 1")
     align_tree.inputs.new("NodeSocketVector", "Vector + 1")
     align_tree.inputs.new("NodeSocketFloat", "Depth + 1")
     align_tree.inputs.new("NodeSocketColor", "Frame + 2")
+    align_tree.inputs.new("NodeSocketColor", "Albedo + 2")
     align_tree.inputs.new("NodeSocketVector", "Vector + 2")
 
     align_tree.outputs.new("NodeSocketColor", "Temporal Aligned")
@@ -76,24 +79,63 @@ def create_temporal_align() -> NodeTree:
     displace_frame_0 = align_tree.nodes.new(type="CompositorNodeDisplace")
     displace_frame_0.inputs["X Scale"].default_value = -1
     displace_frame_0.inputs["Y Scale"].default_value = -1
+    
+    displace_frame_0_ta = align_tree.nodes.new(type="CompositorNodeDisplace")
+    displace_frame_0_ta.inputs["X Scale"].default_value = -1
+    displace_frame_0_ta.inputs["Y Scale"].default_value = -1
 
     displace_frame_2 = align_tree.nodes.new(type="CompositorNodeDisplace")
     displace_frame_2.inputs["X Scale"].default_value = 1
     displace_frame_2.inputs["Y Scale"].default_value = 1
 
+    displace_frame_2_ta = align_tree.nodes.new(type="CompositorNodeDisplace")
+    displace_frame_2_ta.inputs["X Scale"].default_value = 1
+    displace_frame_2_ta.inputs["Y Scale"].default_value = 1
+
     median_max_0 = align_tree.nodes.new("CompositorNodeGroup")
     median_max_0.node_tree = create_temporal_median(False)
+
+    median_max_0_ta = align_tree.nodes.new("CompositorNodeGroup")
+    median_max_0_ta.node_tree = create_temporal_median(False)
 
     median_min_2 = align_tree.nodes.new("CompositorNodeGroup")
     median_min_2.node_tree = create_temporal_median(True)
 
+    median_min_2_ta = align_tree.nodes.new("CompositorNodeGroup")
+    median_min_2_ta.node_tree = create_temporal_median(True)
+
     median_min_a = align_tree.nodes.new("CompositorNodeGroup")
     median_min_a.node_tree = create_temporal_median(True)
+
+    median_min_a_ta = align_tree.nodes.new("CompositorNodeGroup")
+    median_min_a_ta.node_tree = create_temporal_median(True)
 
     median_max_a = align_tree.nodes.new("CompositorNodeGroup")
     median_max_a.node_tree = create_temporal_median(False)
 
+    median_max_a_ta = align_tree.nodes.new("CompositorNodeGroup")
+    median_max_a_ta.node_tree = create_temporal_median(False)
+
     alpha_over = align_tree.nodes.new("CompositorNodeAlphaOver")
+
+    alpha_over_ta = align_tree.nodes.new("CompositorNodeAlphaOver")
+
+    ta_difference = align_tree.nodes.new("CompositorNodeMixRGB")
+    ta_difference.blend_type = "DIFFERENCE"
+    ta_difference.use_clamp = True
+
+    ta_multiply = align_tree.nodes.new("CompositorNodeMath")
+    ta_multiply.operation = "MULTIPLY"
+    ta_multiply.inputs[1].default_value = settings.SIDT_TED_Filter_Threshold
+    ta_multiply.use_clamp = True
+
+    ta_dialate = align_tree.nodes.new("CompositorNodeDilateErode")
+    ta_dialate.mode = "FEATHER"
+    ta_dialate.distance = settings.SIDT_TED_Filter_Distance
+    ta_dialate.falloff = "SPHERE"
+
+    ta_mix = align_tree.nodes.new("CompositorNodeMixRGB")
+    ta_mix.blend_type = "MIX"
 
     vecblur_node = align_tree.nodes.new("CompositorNodeVecBlur")
     vecblur_node.mute = not settings.SIDT_MB_Toggle
@@ -127,25 +169,58 @@ def create_temporal_align() -> NodeTree:
     align_tree.links.new(align_tree_input.outputs["Frame + 0"],displace_frame_0.inputs[0])
     align_tree.links.new(align_tree_input.outputs["Vector + 0"],displace_frame_0.inputs[1])
     
+    align_tree.links.new(align_tree_input.outputs["Albedo + 0"],displace_frame_0_ta.inputs[0])
+    align_tree.links.new(align_tree_input.outputs["Vector + 0"],displace_frame_0_ta.inputs[1])
+    
     align_tree.links.new(align_tree_input.outputs["Frame + 2"],displace_frame_2.inputs[0])
     align_tree.links.new(align_tree_input.outputs["Vector + 2"],displace_frame_2.inputs[1])
     
+    align_tree.links.new(align_tree_input.outputs["Albedo + 2"],displace_frame_2_ta.inputs[0])
+    align_tree.links.new(align_tree_input.outputs["Vector + 2"],displace_frame_2_ta.inputs[1])
+    
     align_tree.links.new(align_tree_input.outputs["Frame + 1"],median_max_0.inputs[0])
     align_tree.links.new(displace_frame_2.outputs[0],median_max_0.inputs[1])
+
+    align_tree.links.new(align_tree_input.outputs["Albedo + 1"],median_max_0_ta.inputs[0])
+    align_tree.links.new(displace_frame_2_ta.outputs[0],median_max_0_ta.inputs[1])
     
     align_tree.links.new(align_tree_input.outputs["Frame + 1"],median_min_2.inputs[0])
     align_tree.links.new(displace_frame_2.outputs[0],median_min_2.inputs[1])
+
+    align_tree.links.new(align_tree_input.outputs["Albedo + 1"],median_min_2_ta.inputs[0])
+    align_tree.links.new(displace_frame_2_ta.outputs[0],median_min_2_ta.inputs[1])
     
     align_tree.links.new(median_max_0.outputs[0],median_min_a.inputs[0])
     align_tree.links.new(displace_frame_0.outputs[0],median_min_a.inputs[1])
+
+    align_tree.links.new(median_max_0_ta.outputs[0],median_min_a_ta.inputs[0])
+    align_tree.links.new(displace_frame_0_ta.outputs[0],median_min_a_ta.inputs[1])
     
     align_tree.links.new(median_min_a.outputs[0],median_max_a.inputs[0])
     align_tree.links.new(median_min_2.outputs[0],median_max_a.inputs[1])
     
+    align_tree.links.new(median_min_a_ta.outputs[0],median_max_a_ta.inputs[0])
+    align_tree.links.new(median_min_2_ta.outputs[0],median_max_a_ta.inputs[1])
+    
     align_tree.links.new(align_tree_input.outputs["Frame + 1"],alpha_over.inputs[1])
     align_tree.links.new(median_max_a.outputs[0],alpha_over.inputs[2])
     
-    align_tree.links.new(alpha_over.outputs[0],vecblur_node.inputs[0])
+    align_tree.links.new(align_tree_input.outputs["Albedo + 1"],alpha_over_ta.inputs[1])
+    align_tree.links.new(median_max_a_ta.outputs[0],alpha_over_ta.inputs[2])
+
+    align_tree.links.new(alpha_over_ta.outputs[0],ta_difference.inputs[1])
+    align_tree.links.new(align_tree_input.outputs["Albedo + 1"],ta_difference.inputs[2])
+
+    align_tree.links.new(ta_difference.outputs[0],ta_multiply.inputs[0])
+
+    align_tree.links.new(ta_multiply.outputs[0],ta_dialate.inputs[0])
+
+    align_tree.links.new(ta_dialate.outputs[0],ta_mix.inputs[0])
+
+    align_tree.links.new(alpha_over.outputs[0],ta_mix.inputs[1])
+    align_tree.links.new(align_tree_input.outputs["Frame + 1"],ta_mix.inputs[2])
+    
+    align_tree.links.new(ta_mix.outputs[0],vecblur_node.inputs[0])
     align_tree.links.new(align_tree_input.outputs["Depth + 1"],vecblur_node.inputs[1])
     align_tree.links.new(align_tree_input.outputs["Vector + 1"],vecblur_node.inputs[2])
     
@@ -185,30 +260,35 @@ def create_temporal_setup(scene,settings,view_layer_id):
     Frame_0.image.source = "SEQUENCE"
     Frame_0.frame_duration = file_count
     Frame_0.frame_start = 1
-    Frame_0.frame_offset = 0 + old_frame_start
+    Frame_0.frame_offset = 0 + old_frame_start - 1
 
     Frame_1 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_1.image = Frame_0.image
     Frame_1.frame_duration = Frame_0.frame_duration
     Frame_1.frame_start = Frame_0.frame_start
-    Frame_1.frame_offset = 1 + old_frame_start
+    Frame_1.frame_offset = 1 + old_frame_start - 1
 
     Frame_2 = ntree.nodes.new(type="CompositorNodeImage")
     Frame_2.image = Frame_0.image
     Frame_2.frame_duration = Frame_0.frame_duration
     Frame_2.frame_start = Frame_0.frame_start
-    Frame_2.frame_offset = 2 + old_frame_start
+    Frame_2.frame_offset = 2 + old_frame_start - 1
 
     def link_to_node(inputNode, Layer, outNode):
+        settings: SID_Settings = bpy.context.scene.sid_settings
+
         ntree.links.new(Frame_0.outputs[Layer], inputNode.inputs["Frame + 0"])
         ntree.links.new(Frame_0.outputs["Vector"], inputNode.inputs["Vector + 0"])
+        ntree.links.new(Frame_0.outputs[settings.SIDT_TED_Filter_Source], inputNode.inputs["Albedo + 0"])
         
         ntree.links.new(Frame_1.outputs[Layer], inputNode.inputs["Frame + 1"])
         ntree.links.new(Frame_1.outputs["Vector"], inputNode.inputs["Vector + 1"])
+        ntree.links.new(Frame_1.outputs[settings.SIDT_TED_Filter_Source], inputNode.inputs["Albedo + 1"])
         ntree.links.new(Frame_1.outputs["Depth"], inputNode.inputs["Depth + 1"])
         
         ntree.links.new(Frame_2.outputs[Layer], inputNode.inputs["Frame + 2"])
         ntree.links.new(Frame_2.outputs["Vector"], inputNode.inputs["Vector + 2"])
+        ntree.links.new(Frame_2.outputs[settings.SIDT_TED_Filter_Source], inputNode.inputs["Albedo + 2"])
         
         ntree.links.new(inputNode.outputs[0], outNode.inputs[Layer])
 

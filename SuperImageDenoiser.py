@@ -10,8 +10,6 @@ from .Cycles.SID_QualityHigh_Cycles import create_sid_denoiser_high_cy
 from .Cycles.SID_QualitySuper_Cycles import create_sid_denoiser_super_cy
 from .Cycles.SID_Create_Passes_Cycles import create_cycles_passes
 
-from .Temporal.SID_Create_Temporal_Groups import create_temporal_setup
-
 from . import SID_Settings
 
 def find_node(start_node: Node, predicate: Callable[[Node], bool], recursive: bool = False) -> Node:
