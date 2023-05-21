@@ -118,6 +118,6 @@ class SIDT_OT_DenoiseBG(Operator):
         for folder in os.listdir(noisyPath):
             create_temporal_setup(TDScene,settings,folder)
 
-        #bpy.data.scenes.remove(TDScene)
+        bpy.data.scenes.remove(TDScene)
 
         return {'FINISHED'}
