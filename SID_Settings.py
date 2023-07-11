@@ -290,6 +290,11 @@ class SID_Settings(PropertyGroup):
                 'EXR',
                 "This is the highest quality option\nsuiteable if you want to edit the frames later.\nExports as 32bit RGBA EXR, zip compression.\nWarning: this will use a lot of disk space!"
             ),
+            (
+                'TIFF',
+                'TIFF',
+                "This is the second highest quality option\nsuiteable if you want to edit the frames later.\nTakes color management into consideration.\nExports as 16bit RGBA TIFF, no compression.\nWarning: this will use a lot of disk space!"
+            ),
         ),
         default='PNG',
         description="Choose the file format step 2 will output.",

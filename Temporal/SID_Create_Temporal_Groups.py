@@ -361,6 +361,11 @@ def create_temporal_setup(scene,settings,view_layer_id):
         scene.render.image_settings.color_mode = 'RGBA'
         scene.render.image_settings.color_depth = '32'
         scene.render.image_settings.exr_codec = 'ZIP'
+    # TIFF
+    elif settings.SIDT_File_Format == "TIFF":
+        scene.render.image_settings.color_mode = 'RGBA'
+        scene.render.image_settings.color_depth = '16'
+        scene.render.image_settings.tiff_codec = 'NONE'
 
     # Render
     bpy.ops.render.render(animation = True, scene = scene.name)

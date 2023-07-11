@@ -93,18 +93,6 @@ class SIDT_OT_DenoiseBG(Operator):
         scene = context.scene
         settings: SID_Settings = scene.sid_settings
 
-        # ShowMessageBox(
-        #     "During the denoising process there will be no rendering preview. This is normal. Please be patient.",
-        #     "Blender will freeze and not react to any input.",
-        #     " ",
-        #     "If you want to make sure that your render is still running, you can check the console for the current frame.",
-        #     "To open the console, go to Window > Toggle System Console.",
-        #     "This has to be done before you start denoised.",
-        #     "Additionally, you will see your denoised images appear in the folder you specified.",
-        #     " ",
-        #     "If you want to stop denoised immediately, you must close blender."
-        # )
-
         scene = context.scene
         TDScene = bpy.data.scenes[scene.name].copy()
 
