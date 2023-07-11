@@ -176,8 +176,8 @@ def create_links_cy(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
     if settings.use_environment and not scene.render.film_transparent:
         sid_tree.links.new(prev_output,add_environment.inputs[1])
         sid_tree.links.new(input_node.outputs['Env'],add_environment.inputs[2])
-        sid_tree.outputs.new("NodeSocketColor", "Environment")
-        sid_tree.links.new(input_node.outputs['Env'],output_node.inputs["Environment"])
+        sid_tree.outputs.new("NodeSocketColor", "Env")
+        sid_tree.links.new(input_node.outputs['Env'],output_node.inputs["Env"])
         prev_output = add_environment.outputs[0]
 
     sid_tree.links.new(prev_output,final_dn.inputs[0])

@@ -92,7 +92,7 @@ def create_cycles_group(
     if settings.use_transmission: sid_super_group.outputs.new("NodeSocketColor", 'DN Transmission')
     if settings.use_volumetric: sid_super_group.outputs.new("NodeSocketColor", 'DN Volume')
     if settings.use_emission: sid_super_group.outputs.new("NodeSocketColor", 'Emission')
-    if settings.use_environment: sid_super_group.outputs.new("NodeSocketColor", "Environment")
+    if settings.use_environment: sid_super_group.outputs.new("NodeSocketColor", "Env")
 
     # Standard
     standard_denoiser_node = sid_super_group.nodes.new("CompositorNodeGroup")
@@ -178,6 +178,6 @@ def create_cycles_group(
         # Emission
         if settings.use_emission: sid_super_group.links.new(denoiser_type.outputs['Emission'],output_node.inputs['Emission'])
         # Environment
-        if settings.use_environment: sid_super_group.links.new(denoiser_type.outputs['Environment'],output_node.inputs['Environment'])
+        if settings.use_environment: sid_super_group.links.new(denoiser_type.outputs['Env'],output_node.inputs['Env'])
 
     return sid_super_group

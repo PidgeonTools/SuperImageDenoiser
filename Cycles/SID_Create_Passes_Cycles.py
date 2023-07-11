@@ -122,7 +122,7 @@ def create_cycles_passes(
         # Environment
         if settings.use_environment:
             output_file_node.file_slots.new("Env")
-            ntree.links.new(sid_node.outputs['Environment'],output_file_node.inputs['Env'])
+            ntree.links.new(sid_node.outputs['Env'],output_file_node.inputs['Env'])
 
     # Connect RenderLayer to mlEXR node
     if settings.denoiser_type == "SID TEMPORAL":
