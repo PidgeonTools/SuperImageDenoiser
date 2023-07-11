@@ -178,6 +178,6 @@ def create_cycles_group(
         # Emission
         if settings.use_emission: sid_super_group.links.new(denoiser_type.outputs['Emission'],output_node.inputs['Emission'])
         # Environment
-        if settings.use_environment: sid_super_group.links.new(denoiser_type.outputs["Environment"],output_node.inputs["Environment"])
+        if settings.use_environment: sid_super_group.links.new(denoiser_type.outputs['Environment'],output_node.inputs['Environment'])
 
     return sid_super_group
