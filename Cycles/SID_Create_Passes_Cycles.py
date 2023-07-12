@@ -98,7 +98,7 @@ def create_cycles_passes(
         ntree.links.new(sid_output_socket, socket)
 
     # Connect SID Node to mlEXR node
-    if settings.SID_mlEXR:
+    if settings.SID_mlEXR or settings.SIDT_mlEXR:
         # Image
         ntree.links.new(sid_output_socket,output_file_node.inputs["Image"])
         # Diffuse
