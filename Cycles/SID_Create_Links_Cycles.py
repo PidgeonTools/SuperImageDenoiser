@@ -117,7 +117,7 @@ def create_links_cy(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
         add_emission.location = (800, 200)
         add_emission.name = add_emission.label = "Add Emission"
     # Environment
-    if settings.use_environment and not scene.render.film_transparent:
+    if settings.use_environment:
         add_environment = sid_tree.nodes.new(type="CompositorNodeMixRGB")
         add_environment.blend_type = "ADD"
         add_environment.inputs[2].default_value = (0, 0, 0, 1)
@@ -173,7 +173,7 @@ def create_links_cy(sid_denoiser_tree: NodeTree, settings: SID_Settings) -> Node
         sid_tree.links.new(emission_dn.outputs[0],output_node.inputs["Emission"])
         prev_output = add_emission.outputs[0]
     # Environment
-    if settings.use_environment and not scene.render.film_transparent:
+    if settings.use_environment:
         sid_tree.links.new(prev_output,add_environment.inputs[1])
         sid_tree.links.new(input_node.outputs['Env'],add_environment.inputs[2])
         sid_tree.outputs.new("NodeSocketColor", "Env")
