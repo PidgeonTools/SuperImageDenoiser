@@ -87,10 +87,10 @@ def create_cycles_group(
 
 
     # mlEXR
-    sid_super_group.outputs.new("NodeSocketColor", "DN Diffuse")
-    sid_super_group.outputs.new("NodeSocketColor", 'DN Glossy')
-    if settings.use_transmission: sid_super_group.outputs.new("NodeSocketColor", 'DN Transmission')
-    if settings.use_volumetric: sid_super_group.outputs.new("NodeSocketColor", 'DN Volume')
+    sid_super_group.outputs.new("NodeSocketColor", "Diffuse")
+    sid_super_group.outputs.new("NodeSocketColor", 'Glossy')
+    if settings.use_transmission: sid_super_group.outputs.new("NodeSocketColor", 'Transmission')
+    if settings.use_volumetric: sid_super_group.outputs.new("NodeSocketColor", 'Volume')
     if settings.use_emission: sid_super_group.outputs.new("NodeSocketColor", 'Emission')
     if settings.use_environment: sid_super_group.outputs.new("NodeSocketColor", "Env")
 
@@ -166,15 +166,15 @@ def create_cycles_group(
         elif settings.quality == "SUPER": denoiser_type = super_denoiser_node
 
         # Diffuse
-        sid_super_group.links.new(denoiser_type.outputs['Denoised Diffuse'],output_node.inputs['DN Diffuse'])
+        sid_super_group.links.new(denoiser_type.outputs['Denoised Diffuse'],output_node.inputs['Diffuse'])
         # Glossy
-        sid_super_group.links.new(denoiser_type.outputs['Denoised Glossy'],output_node.inputs['DN Glossy'])
+        sid_super_group.links.new(denoiser_type.outputs['Denoised Glossy'],output_node.inputs['Glossy'])
         # Transmission
         if settings.use_transmission:
-            sid_super_group.links.new(denoiser_type.outputs['Denoised Transmission'],output_node.inputs['DN Transmission'])
+            sid_super_group.links.new(denoiser_type.outputs['Denoised Transmission'],output_node.inputs['Transmission'])
         # Volume
         if settings.use_volumetric:
-            sid_super_group.links.new(denoiser_type.outputs['Denoised Volume'],output_node.inputs['DN Volume'])
+            sid_super_group.links.new(denoiser_type.outputs['Denoised Volume'],output_node.inputs['Volume'])
         # Emission
         if settings.use_emission:
             sid_super_group.links.new(denoiser_type.outputs['Emission'],output_node.inputs['Emission'])

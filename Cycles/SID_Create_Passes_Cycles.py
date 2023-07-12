@@ -103,18 +103,18 @@ def create_cycles_passes(
         ntree.links.new(sid_output_socket,output_file_node.inputs["Image"])
         # Diffuse
         output_file_node.file_slots.new("Diffuse")
-        ntree.links.new(sid_node.outputs['DN Diffuse'],output_file_node.inputs['Diffuse'])
+        ntree.links.new(sid_node.outputs['Diffuse'],output_file_node.inputs['Diffuse'])
         # Glossy
         output_file_node.file_slots.new("Glossy")
-        ntree.links.new(sid_node.outputs['DN Glossy'],output_file_node.inputs['Glossy'])
+        ntree.links.new(sid_node.outputs['Glossy'],output_file_node.inputs['Glossy'])
         # Transmission
         if settings.use_transmission:
             output_file_node.file_slots.new("Transmission")
-            ntree.links.new(sid_node.outputs['DN Transmission'],output_file_node.inputs['Transmission'])
+            ntree.links.new(sid_node.outputs['Transmission'],output_file_node.inputs['Transmission'])
         # Volume
         if settings.use_volumetric:
             output_file_node.file_slots.new("Volume")
-            ntree.links.new(sid_node.outputs['DN Volume'],output_file_node.inputs['Volume'])
+            ntree.links.new(sid_node.outputs['Volume'],output_file_node.inputs['Volume'])
         # Emission
         if settings.use_emission:
             output_file_node.file_slots.new("Emission")
