@@ -250,6 +250,10 @@ def create_temporal_setup(scene,settings,view_layer_id):
         if file.endswith(".exr"):
             file_count += 1
 
+    if file_count <= 4:
+        print("Not enough frames to denoise. Skipping...")
+        return
+
     old_frame_start = scene.frame_start
     scene.frame_start = 1
     scene.frame_end = file_count - 3
