@@ -241,14 +241,22 @@ def create_temporal_setup(scene,settings,view_layer_id):
     path_noisy = os.path.join(settings.inputdir, "noisy", f"{view_layer_id}")
     path_denoised = os.path.join(settings.inputdir, "denoised", f"{view_layer_id}")
 
+    # Check if path_noisy points to a directory
+    if not os.path.isdir(path_noisy):
+        print(f"Error: {path_noisy} is not a valid directory.")
+        return  # Exit the function as we can't proceed without a valid directory
+
     # Clear Compositor Output
     for node in ntree.nodes: ntree.nodes.remove(node)
     
     #count files rendered
     file_count = 0
     for file in os.listdir(path_noisy):
-        if file.endswith(".exr"):
-            file_count += 1
+        full_path = os.path.join(path_noisy, file)  # Get the full path of the item
+
+        if not os.path.isdir(full_path):  # Check if the item is a directory
+            if file.endswith(".exr"):
+                file_count += 1
 
     if file_count <= 4:
         print("Not enough frames to denoise. Skipping...")
