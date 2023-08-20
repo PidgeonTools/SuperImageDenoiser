@@ -60,7 +60,7 @@ class SID_PT_Panel:
     bl_options = {"DEFAULT_CLOSED"}
 
 class SID_PT_SID_Panel(SID_PT_Panel, Panel):
-    bl_label = "Create Super Denoiser"
+    bl_label = "Create Super Image Denoiser"
 
     def draw_header(self, context: Context):
         layout = self.layout
@@ -114,16 +114,122 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
             layout.separator()
 
             CompatibleWith = [
-                'CYCLES',
-                'LUXCORE',
-                'octane',
-                'PRMAN_RENDER'
+                'CYCLES'
             ]
 
             if not RenderEngine in CompatibleWith:
                 cycles_warning = layout.column(align=True)
                 cycles_warning.label(
                     text="SID is not yet compatible with this render engine.", icon='ERROR'
+                    )
+                cycles_warning.label(
+                    text="       Please change the render engine to a compatible one."
+                    )
+                layout.separator()
+
+                # don't draw any more panel settings
+                return
+
+            quality = layout.column(align=True)
+            quality.prop(
+                settings,
+                "quality",
+                text="Quality"
+                )
+            if settings.quality == 'STANDARD':
+                quality.label(
+                    text="Denoise the whole image in a single pass.",
+                    icon='INFO'
+                    )
+                quality.label(
+                    text="       Maximum compositing speed and least memory consumption."
+                    )
+            elif settings.quality == 'HIGH':
+                quality.label(
+                    text="Denoise related render passes in groups.", icon='INFO'
+                    )
+                quality.label(
+                    text="       Moderate compositing speed and increased memory consumption."
+                    )
+            elif settings.quality == 'SUPER':
+                if RenderEngine == 'octane':
+                    quality.label(
+                        text="Renderer does not support super quality.", icon='INFO'
+                        )
+                    quality.label(
+                        text="       Will use high quality setting instead"
+                    )
+                else:
+                    quality.label(
+                        text="Denoise each render pass separately.", icon='INFO'
+                        )
+                    quality.label(
+                        text="       Slowest compositing speed and greatly increased memory consumption."
+                        )
+            layout.separator()
+
+            if settings.quality != "STANDARD":
+                passes = layout.column(align=True)
+                passes.label(
+                    text="Render passes:"
+                    )
+                
+                subpasses = passes.row(align=True)
+                subpasses.use_property_split = False
+
+                subpasses.prop(
+                    settings,
+                    "use_emission",
+                    text="Emission",
+                    toggle=True
+                    )
+                subpasses.prop(
+                    settings,
+                    "use_transmission",
+                    text="Transmission",
+                    toggle=True
+                    )
+                subpasses.prop(
+                    settings,
+                    "use_environment",
+                    text="Environment",
+                    toggle=True
+                    )
+
+                subpasses.prop(
+                    settings,
+                    "use_volumetric",
+                    text="Volumetric",
+                    toggle=True
+                    )
+
+                layout.separator()
+
+            advanced = layout.column(align=True)
+            advanced.label(
+                text="Advanced:"
+                )
+            layout.separator()
+
+            if settings.quality != "STANDARD":
+                advanced.prop(settings, "SID_mlEXR", text="Use Multi-Layer EXR")
+                layout.separator()
+
+            layout.operator("object.superimagedenoise", icon='SHADERFX')
+            
+            layout.operator("object.superimagedenoise", text="Refresh Super Denoiser", icon='FILE_REFRESH')
+
+        elif denoiser_type == "SID TEMPORAL":
+            layout.separator()
+
+            CompatibleWith = [
+                'CYCLES'
+            ]
+
+            if not RenderEngine in CompatibleWith:
+                cycles_warning = layout.column(align=True)
+                cycles_warning.label(
+                    text="SID Temporal is not yet compatible with this render engine.", icon='ERROR'
                     )
                 cycles_warning.label(
                     text="       Please change the render engine to a compatible one."
@@ -209,95 +315,85 @@ class SID_PT_SID_Panel(SID_PT_Panel, Panel):
                         text="Volumetric",
                         toggle=True
                         )
-                ###############
-                ### LUXCORE ###
-                ###############
-                if RenderEngine == 'LUXCORE':
-                    subpasses.prop(
-                        settings,
-                        "use_emission",
-                        text="Emission",
-                        toggle=True
-                        )
-                    subpasses.prop(
-                        settings,
-                        "use_transmission",
-                        text="Transmission",
-                        toggle=True
-                        )
-                    if settings.use_transmission and settings.use_emission:
-                        subpasses.prop(
-                            settings,
-                            "use_caustics",
-                            text="Caustics",
-                            toggle=True
-                            )
-                ##############
-                ### OCTANE ###
-                ##############
-                if RenderEngine == 'octane':
-                    subpasses.prop(
-                        settings,
-                        "use_emission",
-                        text="Emission",
-                        toggle=True
-                        )
-                    subpasses.prop(
-                        settings,
-                        "use_refraction",
-                        text="Refraction",
-                        toggle=True
-                        )
-                    subpasses.prop(
-                        settings,
-                        "use_transmission",
-                        text="Transmission",
-                        toggle=True
-                        )
-                    subpasses.prop(
-                        settings,
-                        "use_sss",
-                        text="SSS",
-                        toggle=True
-                        )
-                    subpasses.prop(
-                        settings,
-                        "use_volumetric",
-                        text="Volumetric",
-                        toggle=True
-                        )
-                #################
-                ### RENDERMAN ###
-                #################
-                if RenderEngine == 'PRMAN_RENDER':
-                    subpasses.prop(
-                        settings,
-                        "use_emission",
-                        text="Emission",
-                        toggle=True
-                        )
-                    subpasses.prop(
-                        settings,
-                        "use_sss",
-                        text="SSS",
-                        toggle=True
-                        )
 
                 layout.separator()
 
-            advanced = layout.column(align=True)
-            advanced.label(
-                text="Advanced:"
+            fileio = layout.column(align=True)
+            fileio.active = panel_active
+            fileio.label(text="Image Save:")
+            fileio.prop(
+                settings,
+                "SIDT_File_Format",
+                expand=False,
+                text="Final output file format"
                 )
-            layout.separator()
+            fileio.separator()
+            fileio.prop(settings, "inputdir", text="Image directory")
+            fileio.separator()
+            fileio.prop(settings, "SID_mlEXR_Compressed")
+            fileio.separator()
+            fileio.prop(scene.render, "use_overwrite", text="Overwrite existing files")
+            fileio.separator()
 
-            if settings.quality != "STANDARD":
-                advanced.prop(settings, "use_mlEXR", text="Use Multi-Layer EXR")
-                layout.separator()
+            motion_blur = layout.column(align=True)
+            motion_blur.active = panel_active
+            motion_blur.label(text="Motion Blur Settings:")
+            motion_blur.prop(settings, "SIDT_MB_Toggle")
+            motion_blur_settings = layout.column(align=True)
+            motion_blur_settings.active = (panel_active and settings.SIDT_MB_Toggle)
+            motion_blur_settings.prop(settings, "SIDT_MB_Samples")
+            motion_blur_settings.prop(settings, "SIDT_MB_Shutter")
+            motion_blur_settings.separator()
+            motion_blur_settings.prop(settings, "SIDT_MB_Min")
+            motion_blur_settings.prop(settings, "SIDT_MB_Max")
+            motion_blur_settings.separator()
+            motion_blur_settings.prop(settings, "SIDT_MB_Interpolation")
+        
+            motion_blur_settings.separator()
 
-            layout.operator("object.superimagedenoise", icon='SHADERFX')
-            
-            layout.operator("object.superimagedenoise", text="Refresh Super Denoiser", icon='FILE_REFRESH')
+            sidtrender = layout.column(align=True)
+            sidtrender.label(text="Advanced:")
+            #sidtrender.prop(settings, "SIDT_Overscan_Auto")
+            sidtrender.prop(settings, "SIDT_Overscan_Amount")
+            sidtrender.separator()
+            sidtrender.prop(settings, "SIDT_mlEXR", text="Use Multi-Layer EXR")
+            sidtrender.separator()
+            sidtrender.prop(settings, "SIDT_Preview", text="Preview Render (not recommended)")
+            sidtrender.separator()
+            sidtrender.prop(settings, "SIDT_TED_Filter_Source", text="TED-Filter Source")
+            sidtrender.separator()
+            sidtrender.prop(settings, "SIDT_TED_Filter_Threshold", text="TED-Filter Threshold")
+            sidtrender.separator()
+            sidtrender.prop(settings, "SIDT_TED_Filter_Distance", text="TED-Filter Radius")
+            sidtrender.separator()
+            sidtrender.active = panel_active
+            if settings.SIDT_Preview:
+                if is_rendering:
+                    sidtrender.label(text=f"{denoise_render_status.jobs_done} / {denoise_render_status.jobs_total} View Layers completed", icon='INFO')
+                    sidtrender.prop(denoise_render_status, "percent_complete")
+                    sidtrender.operator("object.superimagedenoisetemporal_stop", icon='CANCEL')
+                else:
+                    sidtrender.operator("object.superimagedenoisetemporal", icon='RENDER_ANIMATION')
+                    sidtrender.separator()
+            else:
+                sidtrender.operator("object.superimagedenoisetemporal_bg", icon='RENDER_ANIMATION')
+                sidtrender.separator()
+
+            sidtdenoise = layout.column(align=True)
+            sidtdenoise.active = panel_active
+
+            if settings.SIDT_Preview:
+                if is_denoising:
+                    sidtdenoise.active = True
+                    sidtdenoise.label(text=f"{temporal_denoiser_status.jobs_done} / {temporal_denoiser_status.jobs_total} View Layers completed", icon='INFO')
+                    sidtdenoise.prop(temporal_denoiser_status, "percent_complete")
+                    sidtdenoise.operator("object.superimagedenoisealign_stop", icon='CANCEL')
+                else:
+                    sidtdenoise.operator("object.superimagedenoisealign", icon='SHADERFX')
+            else:
+                sidtdenoise.operator("object.superimagedenoisealign_bg", icon='SHADERFX')
+
+
 
         elif denoiser_type == "TEMPORAL" and is_temporal_supported:
             ##### TEMPORAL #####

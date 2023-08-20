@@ -123,13 +123,18 @@ class SID_Settings(PropertyGroup):
                 'Super Image Denoiser'
             ),
             (
+                'SID TEMPORAL',
+                'SID Temporal',
+                'Temporal Animation Denoiser using Super Image Denoiser'
+            ),
+            (
                 'TEMPORAL',
-                'Temporal',
-                'Temporal Animation Denoiser'
+                'OptiX Temporal',
+                'Temporal Animation Denoiser using OptiX'
             ),
         ),
         default='SID',
-        description="Choose the denoiser type, SID is recomended for images, Temporal for animations only",
+        description="Choose the denoiser type,\nSID is recomended for images and animations,\ntemporal for animations only",
         options=set(), # Not animatable!
         )
 
@@ -165,67 +170,206 @@ class SID_Settings(PropertyGroup):
         maxlen=1024,
         options=set(), # Not animatable!
         )
+    
+    filename: StringProperty(
+        name="File Name",
+        default= "",
+        description="File",
+        subtype='DIR_PATH',
+        maxlen=1024,
+        options=set(), # Not animatable!
+        )
 
     use_emission: BoolProperty(
         name="Emission",
         default=True,
-        description="Enable this if you have Emissive materials in your scene",
+        description="Enable this if you have emissive materials in your scene",
         options=set(), # Not animatable!
         )
 
     use_environment: BoolProperty(
         name="Environment",
         default=True,
-        description="Enable this if you have Environment materials in your scene",
+        description="Enable this if your environment is visible in the render",
         options=set(), # Not animatable!
         )
 
     use_transmission: BoolProperty(
         name="Transmission",
         default=True,
-        description="Enable this if you have Transmissive materials in your scene",
+        description="Enable this if you have transmissive materials in your scene",
         options=set(), # Not animatable!
         )
 
     use_volumetric: BoolProperty(
         name="Volume",
         default=False,
-        description="Enable this if you have Volumetric materials in your scene",
+        description="Enable this if you have volumetric materials in your scene",
         options=set(), # Not animatable!
         )
 
-    use_refraction: BoolProperty(
-        name="Refraction",
-        default=False,
-        description="Enable this if you have Refractive materials in your scene",
-        options=set(), # Not animatable!
-        )
-
-    use_sss: BoolProperty(
-        name="SSS",
-        default=False,
-        description="Enable this if you have SSS materials in your scene",
-        options=set(), # Not animatable!
-        )
-
-    compositor_reset: BoolProperty(
-        name="CompositorReset",
-        default=True,
-        description="Refreshes SID instead of adding another node group",
-        options=set(), # Not animatable!
-        )
-
-    use_mlEXR: BoolProperty(
+    SID_mlEXR: BoolProperty(
         name="MultiLayerEXR",
         default=False,
         description="Export a denoised MultiLayer EXR file",
         options=set(), # Not animatable!
         )
+    
+    SID_mlEXR_Compressed: BoolProperty(
+        name="Smaller EXR Files",
+        default=False,
+        description="Compresses the EXR files to save space,\nwill use 16bit DWAA EXR (lossy) instead of 32bit ZIP (lossless)",
+        options=set(), # Not animatable!
+        )
 
-    use_caustics: BoolProperty(
-        name="Caustics",
+    SIDT_MB_Toggle: BoolProperty(
+        name="Motion Blur",
         default=True,
-        description="Enable this if you have Caustics in your Scene",
+        description="Enables faked motion blur",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_MB_Samples: IntProperty(
+        name="Samples",
+        default=32,
+        min=1,
+        max=256,
+        description="Number of motion blur samples,\nmore samples = more accurate motion blur",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_MB_Shutter: FloatProperty(
+        name="Shutter Speed",
+        default=0.5,
+        min=0,
+        max=2,
+        description="Time taken in frames between shutter open and close",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_MB_Min: IntProperty(
+        name="Min",
+        default=0,
+        min=0,
+        max=1024,
+        description="Minimum speed for a pixel to be blurred,\nused to separate fast moving objects from slow moving ones",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_MB_Max: IntProperty(
+        name="Max",
+        default=0,
+        min=0,
+        max=1024,
+        description="Maximum speed, or zero for no limit",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_MB_Interpolation: BoolProperty(
+        name="Curved Interpolation",
+        default=False,
+        description="Interpolate between frames in a bezier curve, rather than linearly",
+        options=set(), # Not animatable!
+        )
+        
+    SIDT_File_Format: EnumProperty(
+        name="File Output",
+        items=(
+            (
+                'PNG',
+                'PNG',
+                "This is the slowest option\nsuiteable for final rendering.\nExports as 8bit RGBA PNG, 0% compression.\nWarning: no compression!"
+            ),
+            (
+                'JPEG',
+                'JPEG',
+                "This is the smallest file size and fastest processing option.\nsuiteable for previewing.\nExports as RGB JPG, 90% quality.\nWarning: lossy compression, may cause JPEG artifacts!"
+            ),
+            (
+                'OPEN_EXR',
+                'EXR',
+                "This is the highest quality option\nsuiteable if you want to edit the frames later.\nExports as 32bit RGBA EXR, zip compression.\nWarning: this will use a lot of disk space!"
+            ),
+            (
+                'TIFF',
+                'TIFF',
+                "This is the second highest quality option\nsuiteable if you want to edit the frames later.\nTakes color management into consideration.\nExports as 16bit RGBA TIFF, no compression.\nWarning: this will use a lot of disk space!"
+            ),
+        ),
+        default='PNG',
+        description="Choose the file format step 2 will output.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_Overscan_Auto: BoolProperty(
+        name="Automatic overscan value",
+        default=True,
+        description="Automatically calculate the overscan value based on the camera's motion.\nCurrently disabled, because I haven't implemented it yet.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_Overscan_Amount: IntProperty(
+        name="Overscan",
+        default=5,
+        min=0,
+        max=20,
+        description="Overscan is the amount of pixels that are rendered outside of the camera's view,\nthis is used to reduce the amount of artifacts at the edges of the image.\nThis is a percentage of the image's width and height.\nThe faster the camera movement, the higher the overscan should be.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_mlEXR: BoolProperty(
+        name="MultiLayerEXR",
+        default=False,
+        description="Export a denoised MultiLayer EXR file.\nThis setting takes a lot of disk space!",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_Preview: BoolProperty(
+        name="Preview",
+        default=False,
+        description="View the render while it's being rendered.\nNot recommended.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_TED_Filter_Threshold: FloatProperty(
+        name="Filter Threshold",
+        default=3,
+        min=0,
+        max=50,
+        description="The higher, the more agressive the TED-Filter will be.\nThe TED-Filter detects artifacts caused by fast movement.\nWe recommend a value between 2 and 5 for most scenes.\nA value of 0 will disable the filter.",
+        options=set(), # Not animatable!
+        )
+
+    SIDT_TED_Filter_Distance: IntProperty(
+        name="Filter Radius",
+        default=3,
+        min=0,
+        max=10,
+        description="The higher, the more feathering the TED-Filter will have.\nThis value determins how smooth the transition of the TED-Filter should be.\nWe recommend a value between 2 and 5 for most scenes.\nA value of 0 will disable the filter.",
+        options=set(), # Not animatable!
+        )
+    
+    SIDT_TED_Filter_Source: EnumProperty(
+        name="Filter Source",
+        items=(
+            (
+                'Temporal Albedo',
+                'Color',
+                "This will use the color of the surfaces to detect artifacts.\nUse this option if your scene has changes in lighting, reflections or shadows."
+            ),
+            (
+                'Image',
+                'Shaded',
+                "This will use the shaded image to detect artifacts.\nUse this option if your scene has a lot of solid colored materials,\nlike a white wall, Leaves, Grass, etc."
+            ),
+            (
+                'Depth',
+                'Depth',
+                "This will use the depth of the image to detect artifacts.\nWe recommend this option if your scene has a lot of transparent materials,\nlike glass, water, etc.\nWarning: this option is experimental! If you get good results, please let us know!"
+            )
+        ),
+        default='Image',
+        description="Chose the source the TED-Filter will use to detect artifacts.",
         options=set(), # Not animatable!
         )
 
